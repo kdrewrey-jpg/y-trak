@@ -222,4 +222,70 @@ function buildPDF() {
   doc.setFont('helvetica','normal'); doc.setFontSize(10);
   doc.text('Time and Attendance', ml, y); y += 24;
   const colW = pw / 2;
-  [[['Name:', d.employee_name],['Last 4 of Social:', d.ssn
+  [[['Name:', d.employee_name],['Last 4 of Social:', d.ssn_last4]],[['Employment Status:', d.employment_status]],[['Current Month:', d.month],['Current Year:', d.year]]].forEach(row => {
+    row.forEach((item, i) => {
+      const x = ml + i * colW;
+      doc.setFont('helvetica','bold'); doc.text(item[0], x, y);
+      const lw = doc.getTextWidth(item[0]) + 4;
+      doc.setFont('helvetica','normal'); doc.text(item[1]||'', x + lw, y);
+      doc.line(x + lw, y + 1, x + colW - 6, y + 1);
+    }); y += 16;
+  }); y += 8;
+  const cols = [{label:'Day',w:28},{label:'Start',w:56},{label:'End',w:56},{label:'Total Hrs',w:58},{label:'Comp Hrs',w:58},{label:'Sick Hrs',w:58},{label:'Notes',w:pw-28-56-56-58-58-58}];
+  const rowH = 16, hdrH = 20;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setFillColor(240,240,240);
+  doc.rect(ml, y, pw, hdrH, 'FD');
+  let cx = ml;
+  cols.forEach(col => { doc.text(col.label, cx+3, y+13); cx += col.w; if(cx<mr) doc.line(cx,y,cx,y+hdrH); });
+  y += hdrH;
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
+  (d.rows||[]).forEach(row => {
+    const vals = [row.day,row.start,row.end,row.total,row.comp,row.sick,row.notes];
+    doc.rect(ml,y,pw,rowH); cx = ml;
+    cols.forEach((col,i) => { if(vals[i]) doc.text(String(vals[i]),cx+3,y+11); cx+=col.w; if(cx<mr) doc.line(cx,y,cx,y+rowH); });
+    y += rowH;
+  });
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setFillColor(240,240,240);
+  doc.rect(ml,y,pw,rowH,'FD');
+  const totW = cols[0].w+cols[1].w+cols[2].w;
+  doc.text('Total Hours:', ml+totW-doc.getTextWidth('Total Hours:')-4, y+11);
+  cx = ml+totW;
+  [d.total_hours,d.comp_hours,d.sick_hours].forEach((val,i) => { if(val) doc.text(val,cx+3,y+11); cx+=cols[3+i].w; if(cx<mr) doc.line(cx,y,cx,y+rowH); });
+  y += rowH + 28;
+  const sigW = (pw-32)/2;
+  doc.setFont('helvetica','bold'); doc.setFontSize(10);
+  doc.text('Employee Signature:', ml, y); doc.text('Chief Deputy Signature:', ml+sigW+32, y);
+  y += 8; const sigH = 52;
+  if (d.emp_signature && d.emp_signature.startsWith('data:image')) {
+    try { doc.addImage(d.emp_signature, 'PNG', ml, y, sigW, sigH-10); } catch(e) {}
+  }
+  doc.line(ml, y+sigH, ml+sigW, y+sigH);
+  doc.line(ml+sigW+32, y+sigH, ml+sigW+32+sigW, y+sigH);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(130,130,130);
+  doc.text('Sign here', ml+sigW+34, y+sigH+9); doc.setTextColor(0,0,0);
+  if (d.status === 'approved') {
+    y += sigH + 20;
+    doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(30,122,60);
+    doc.text(`Approved by ${d.approved_by_name||'supervisor'} on ${new Date(d.approved_at).toLocaleString()}`, ml, y);
+    doc.setTextColor(0,0,0);
+  }
+  return doc;
+}
+
+function downloadPDF() {
+  const doc = buildPDF();
+  doc.save(`${sheetData.employee_name.replace(/\s+/g,'_')}_${sheetData.month}_${sheetData.year}_Timesheet.pdf`);
+}
+
+function printSheet() {
+  const doc = buildPDF();
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url);
+  if (win) win.onload = () => { win.focus(); win.print(); };
+}
+
+init();
+</script>
+</body>
+</html>
