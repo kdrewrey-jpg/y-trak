@@ -219,39 +219,39 @@ function buildPDF() {
   const { jsPDF } = window.jspdf;
   const d = sheetData;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
-  const ml = 54, mr = 558, pw = mr - ml;
-  let y = 54;
+  const ml = 36, mr = 576, pw = mr - ml;
+  let y = 36;
 
-  doc.setFont('helvetica','bold'); doc.setFontSize(16);
-  doc.text("Yalobusha County Sheriff's Department", ml, y); y += 18;
-  doc.setFont('helvetica','normal'); doc.setFontSize(10);
-  doc.text('Time and Attendance', ml, y); y += 24;
+  doc.setFont('helvetica','bold'); doc.setFontSize(14);
+  doc.text("Yalobusha County Sheriff's Department", ml, y); y += 16;
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text('Time and Attendance', ml, y); y += 20;
 
   const colW = pw / 2;
   [[['Name:', d.employee_name],['Last 4 of Social:', d.ssn_last4]],[['Employment Status:', d.employment_status]],[['Current Month:', d.month],['Current Year:', d.year]]].forEach(row => {
     row.forEach((item, i) => {
       const x = ml + i * colW;
-      doc.setFont('helvetica','bold'); doc.text(item[0], x, y);
+      doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.text(item[0], x, y);
       const lw = doc.getTextWidth(item[0]) + 4;
       doc.setFont('helvetica','normal'); doc.text(item[1]||'', x + lw, y);
       doc.line(x + lw, y + 1, x + colW - 6, y + 1);
-    }); y += 16;
-  }); y += 8;
+    }); y += 14;
+  }); y += 6;
 
   const cols = [
-    {label:'Day',w:28},{label:'Start',w:56},{label:'End',w:56},
-    {label:'Total Hrs',w:58},{label:'Comp Hrs',w:58},{label:'Sick Hrs',w:58},
-    {label:'Notes',w:pw-28-56-56-58-58-58}
+    {label:'Day',w:26},{label:'Start',w:52},{label:'End',w:52},
+    {label:'Total Hrs',w:54},{label:'Comp Hrs',w:54},{label:'Sick Hrs',w:54},
+    {label:'Notes',w:pw-26-52-52-54-54-54}
   ];
-  const rowH = 16, hdrH = 20;
+  const rowH = 13, hdrH = 16;
 
-  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setFillColor(240,240,240);
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setFillColor(240,240,240);
   doc.rect(ml, y, pw, hdrH, 'FD');
   let cx = ml;
-  cols.forEach(col => { doc.text(col.label, cx+3, y+13); cx += col.w; if(cx<mr) doc.line(cx,y,cx,y+hdrH); });
+  cols.forEach(col => { doc.text(col.label, cx+2, y+11); cx += col.w; if(cx<mr) doc.line(cx,y,cx,y+hdrH); });
   y += hdrH;
 
-  doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
 
   const allRows = [];
   for (let day = 1; day <= 31; day++) {
@@ -262,44 +262,44 @@ function buildPDF() {
     const vals = [row.day, row.start, row.end, row.total, row.comp, row.sick, row.notes];
     doc.rect(ml, y, pw, rowH); cx = ml;
     cols.forEach((col, i) => {
-      if (vals[i]) doc.text(String(vals[i]), cx+3, y+11);
+      if (vals[i]) doc.text(String(vals[i]), cx+2, y+9);
       cx += col.w;
       if (cx < mr) doc.line(cx, y, cx, y+rowH);
     });
     y += rowH;
   });
 
-  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setFillColor(240,240,240);
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setFillColor(240,240,240);
   doc.rect(ml, y, pw, rowH, 'FD');
   const totW = cols[0].w + cols[1].w + cols[2].w;
-  doc.text('Total Hours:', ml+totW-doc.getTextWidth('Total Hours:')-4, y+11);
+  doc.text('Total Hours:', ml+totW-doc.getTextWidth('Total Hours:')-4, y+9);
   cx = ml + totW;
   [d.total_hours, d.comp_hours, d.sick_hours].forEach((val, i) => {
-    if (val) doc.text(val, cx+3, y+11);
+    if (val) doc.text(val, cx+2, y+9);
     cx += cols[3+i].w;
     if (cx < mr) doc.line(cx, y, cx, y+rowH);
   });
-  y += rowH + 28;
+  y += rowH + 20;
 
   const sigW = (pw - 32) / 2;
-  doc.setFont('helvetica','bold'); doc.setFontSize(10);
+  doc.setFont('helvetica','bold'); doc.setFontSize(9);
   doc.text('Employee Signature:', ml, y);
   doc.text('Chief Deputy Signature:', ml+sigW+32, y);
-  y += 8; const sigH = 52;
+  y += 6; const sigH = 44;
 
   if (d.emp_signature && d.emp_signature.startsWith('data:image')) {
-    try { doc.addImage(d.emp_signature, 'PNG', ml, y, sigW, sigH-10); } catch(e) {}
+    try { doc.addImage(d.emp_signature, 'PNG', ml, y, sigW, sigH-8); } catch(e) {}
   }
   doc.line(ml, y+sigH, ml+sigW, y+sigH);
   doc.line(ml+sigW+32, y+sigH, ml+sigW+32+sigW, y+sigH);
-  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7);
   doc.setTextColor(130,130,130);
-  doc.text('Sign here', ml+sigW+34, y+sigH+9);
+  doc.text('Sign here', ml+sigW+34, y+sigH+8);
   doc.setTextColor(0,0,0);
 
   if (d.status === 'approved' && d.approved_by_name) {
-    y += sigH + 20;
-    doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(30,122,60);
+    y += sigH + 16;
+    doc.setFont('helvetica','italic'); doc.setFontSize(8); doc.setTextColor(30,122,60);
     doc.text(`Approved by ${d.approved_by_name} on ${new Date(d.approved_at).toLocaleString()}`, ml, y);
     doc.setTextColor(0,0,0);
   }
