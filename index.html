@@ -40,23 +40,14 @@
   .metric { background: #f5f5f5; border-radius: 8px; padding: 10px 12px; }
   .metric-label { font-size: 11px; color: #666; margin: 0 0 3px; }
   .metric-value { font-size: 20px; font-weight: bold; margin: 0; color: #111; }
-
-  /* Signature section */
   .sig-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
   @media (max-width: 600px) { .sig-row { grid-template-columns: 1fr; } }
   .sig-block { display: flex; flex-direction: column; gap: 8px; }
   .sig-block-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
-
-  /* Toggle switch */
   .sig-toggle { display: flex; border: 1px solid #ccc; border-radius: 7px; overflow: hidden; width: 100%; }
-  .sig-toggle button {
-    flex: 1; padding: 7px 6px; font-size: 12px; border: none; background: #f7f7f7;
-    color: #555; cursor: pointer; font-family: Arial, sans-serif; transition: background 0.15s, color 0.15s;
-  }
+  .sig-toggle button { flex: 1; padding: 7px 6px; font-size: 12px; border: none; background: #f7f7f7; color: #555; cursor: pointer; font-family: Arial, sans-serif; transition: background 0.15s, color 0.15s; }
   .sig-toggle button.active { background: #1a5dc8; color: #fff; font-weight: bold; }
   .sig-toggle button:first-child { border-right: 1px solid #ccc; }
-
-  /* Draw pad */
   .sig-draw-wrap { display: flex; flex-direction: column; gap: 6px; }
   .sig-canvas-outer { border: 1px solid #bbb; border-radius: 8px; background: #fff; overflow: hidden; touch-action: none; position: relative; }
   .sig-canvas-outer canvas { display: block; width: 100%; height: 100px; cursor: crosshair; }
@@ -68,26 +59,13 @@
   .sig-btn.save:hover { background: #154fa8; }
   .sig-btn.clear-btn { color: #c0392b; border-color: #e0a0a0; }
   .sig-saved-badge { font-size: 11px; color: #1a7a3a; display: none; }
-
-  /* Upload area */
   .sig-upload-wrap { display: none; flex-direction: column; gap: 6px; }
-  .sig-upload-box {
-    border: 1px dashed #aaa; border-radius: 8px; height: 100px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; position: relative; overflow: hidden; background: #fafafa;
-  }
+  .sig-upload-box { border: 1px dashed #aaa; border-radius: 8px; height: 100px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; background: #fafafa; }
   .sig-upload-box:hover { background: #f0f0f0; border-color: #777; }
   .sig-upload-box input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
   .sig-upload-box img { max-height: 88px; max-width: 100%; object-fit: contain; display: none; }
   .sig-upload-placeholder { font-size: 12px; color: #999; pointer-events: none; text-align: center; padding: 0 12px; line-height: 1.5; }
   .sig-upload-clear { font-size: 11px; color: #c0392b; cursor: pointer; align-self: flex-end; display: none; text-decoration: underline; }
-
-  /* Saved preview (shared) */
-  .sig-preview-wrap { display: none; flex-direction: column; gap: 6px; }
-  .sig-preview-box { border: 1px solid #bbb; border-radius: 8px; height: 100px; overflow: hidden; background: #fff; }
-  .sig-preview-box img { width: 100%; height: 100%; object-fit: contain; }
-  .sig-preview-actions { display: flex; gap: 8px; justify-content: flex-end; }
-
   td.col-total { background: #f5f5f5; cursor: not-allowed; }
   .field-invalid input, .field-invalid select { border-color: #c0392b !important; background: #fff5f5 !important; }
   .field-error-msg { font-size: 11px; color: #c0392b; margin-top: 2px; display: none; }
@@ -123,18 +101,10 @@
     <div class="field" id="field-month"><label>Month <span style="color:#c0392b;">*</span></label>
       <select id="f-month">
         <option value="" selected disabled>Select month</option>
-        <option value="January">January</option>
-        <option value="February">February</option>
-        <option value="March">March</option>
-        <option value="April">April</option>
-        <option value="May">May</option>
-        <option value="June">June</option>
-        <option value="July">July</option>
-        <option value="August">August</option>
-        <option value="September">September</option>
-        <option value="October">October</option>
-        <option value="November">November</option>
-        <option value="December">December</option>
+        <option>January</option><option>February</option><option>March</option>
+        <option>April</option><option>May</option><option>June</option>
+        <option>July</option><option>August</option><option>September</option>
+        <option>October</option><option>November</option><option>December</option>
       </select>
       <span class="field-error-msg">Required</span>
     </div>
@@ -142,7 +112,7 @@
   </div>
 
   <div class="time-note">
-    Enter times in 24-hour format &mdash; e.g. <strong>08:00</strong> for 8:00 AM and <strong>16:00</strong> for 4:00 PM. Total hours will calculate automatically.
+    Enter times in 24-hour format — e.g. <strong>0800</strong> or <strong>08:00</strong> for 8:00 AM and <strong>1600</strong> or <strong>16:00</strong> for 4:00 PM. Colons are added automatically.
   </div>
 
   <div class="table-wrap">
@@ -177,18 +147,13 @@
     <div class="metric"><p class="metric-label">Sick hours</p><p class="metric-value" id="bar-sick">0.00</p></div>
   </div>
 
-  <!-- Signature blocks -->
   <div class="sig-row" style="align-items: flex-end;">
-
-    <!-- Employee signature -->
     <div class="sig-block" id="sig-emp">
       <span class="sig-block-label">Employee signature</span>
-
       <div class="sig-toggle">
         <button class="active" onclick="setSigMode('emp','draw')">Sign manually</button>
         <button onclick="setSigMode('emp','upload')">Insert image</button>
       </div>
-
       <div class="sig-draw-wrap" id="emp-draw">
         <div id="emp-canvas-outer" style="background: transparent; overflow: hidden; touch-action: none; position: relative;">
           <canvas id="emp-canvas" style="display:block;width:100%;height:80px;cursor:crosshair;"></canvas>
@@ -201,7 +166,6 @@
         </div>
         <span class="sig-saved-badge" id="emp-draw-saved">&#10003; Signature saved</span>
       </div>
-
       <div class="sig-upload-wrap" id="emp-upload">
         <div style="height: 80px; display: flex; align-items: flex-end; overflow: hidden; background: transparent;">
           <div style="position: relative; width: 100%; height: 100%;">
@@ -215,14 +179,12 @@
       </div>
     </div>
 
-    <!-- Chief Deputy signature -->
     <div class="sig-block" id="sig-dep">
       <span class="sig-block-label">Chief Deputy signature</span>
       <div style="height: 80px;"></div>
       <div style="border-bottom: 1.5px solid #555; width: 100%; margin: 0 0 4px;"></div>
       <span style="font-size: 11px; color: #888;">To be signed after printing</span>
     </div>
-
   </div>
 
   <div class="validation-banner" id="val-banner">
@@ -253,21 +215,40 @@
 </div>
 
 <script>
-/* ── Timecard rows ── */
+/* ── Time parsing with auto-format ── */
 function parseTime(v) {
   if (!v) return null;
-  const m = v.trim().match(/^(\d{1,2}):(\d{2})$/);
-  if (!m) return null;
-  const h = parseInt(m[1]), min = parseInt(m[2]);
+  v = v.trim();
+  let h, min;
+  if (/^\d{1,2}:\d{2}$/.test(v)) {
+    const parts = v.split(':');
+    h = parseInt(parts[0]); min = parseInt(parts[1]);
+  } else if (/^\d{3,4}$/.test(v)) {
+    if (v.length === 3) { h = parseInt(v[0]); min = parseInt(v.slice(1)); }
+    else { h = parseInt(v.slice(0,2)); min = parseInt(v.slice(2)); }
+  } else {
+    return null;
+  }
   if (h > 23 || min > 59) return null;
   return h * 60 + min;
 }
+
+function formatTime(v) {
+  if (!v) return v;
+  v = v.trim();
+  if (/^\d{1,2}:\d{2}$/.test(v)) return v;
+  if (/^\d{3}$/.test(v)) return v[0] + ':' + v.slice(1);
+  if (/^\d{4}$/.test(v)) return v.slice(0,2) + ':' + v.slice(2);
+  return v;
+}
+
 function calcHours(s, e) {
   const sm = parseTime(s), em = parseTime(e);
   if (sm === null || em === null) return null;
   let d = em - sm; if (d < 0) d += 1440;
   return (d / 60).toFixed(2);
 }
+
 function recalcTotals() {
   let tot = 0, comp = 0, sick = 0;
   document.querySelectorAll('tr[data-day]').forEach(r => {
@@ -280,26 +261,39 @@ function recalcTotals() {
   ['tot-comp', 'bar-comp' ].forEach(id => document.getElementById(id).textContent = f(comp));
   ['tot-sick', 'bar-sick' ].forEach(id => document.getElementById(id).textContent = f(sick));
 }
+
+/* ── Build rows ── */
 const tbody = document.getElementById('tc-body');
 for (let d = 1; d <= 31; d++) {
   const tr = document.createElement('tr');
   tr.setAttribute('data-day', d);
   tr.innerHTML = `
     <td class="day-num">${d}</td>
-    <td><input class="ci f-start" placeholder="" inputmode="numeric"></td>
-    <td><input class="ci f-end"   placeholder="" inputmode="numeric"></td>
+    <td><input class="ci f-start" inputmode="numeric" placeholder=""></td>
+    <td><input class="ci f-end"   inputmode="numeric" placeholder=""></td>
     <td class="col-total"><input class="ci f-total auto-val" placeholder="" readonly tabindex="-1"></td>
-    <td><input class="ci f-comp"  placeholder=""></td>
-    <td><input class="ci f-sick"  placeholder=""></td>
+    <td><input class="ci f-comp"  inputmode="numeric" placeholder=""></td>
+    <td><input class="ci f-sick"  inputmode="numeric" placeholder=""></td>
     <td><input class="ci f-notes" placeholder=""></td>`;
   tbody.appendChild(tr);
+
   const st = tr.querySelector('.f-start'), en = tr.querySelector('.f-end'), tot = tr.querySelector('.f-total');
+
   function makeUpd(s, e, t) {
     return function() { const h = calcHours(s.value, e.value); t.value = h !== null ? h : ''; recalcTotals(); };
   }
   const upd = makeUpd(st, en, tot);
-  st.addEventListener('change', upd); st.addEventListener('blur', upd);
-  en.addEventListener('change', upd); en.addEventListener('blur', upd);
+
+  function autoFormat(inp, callback) {
+    return function() {
+      const formatted = formatTime(inp.value);
+      if (formatted !== null) inp.value = formatted;
+      callback();
+    };
+  }
+
+  st.addEventListener('blur', autoFormat(st, upd));
+  en.addEventListener('blur', autoFormat(en, upd));
   tr.querySelector('.f-comp').addEventListener('input', recalcTotals);
   tr.querySelector('.f-sick').addEventListener('input', recalcTotals);
   tr.querySelectorAll('.ci:not(.auto-val)').forEach(inp => {
@@ -308,30 +302,23 @@ for (let d = 1; d <= 31; d++) {
   });
 }
 
-/* ── Signature mode state ── */
-const sigMode = { emp: 'draw', dep: 'draw' };
-const sigData  = { emp: null,  dep: null  };
+/* ── Signature mode ── */
+const sigMode = { emp: 'draw' };
+const sigData  = { emp: null  };
 
 function setSigMode(prefix, mode) {
   sigMode[prefix] = mode;
   sigData[prefix] = null;
-
-  const toggle  = document.querySelectorAll(`#sig-${prefix} .sig-toggle button`);
-  const drawEl  = document.getElementById(prefix + '-draw');
-  const uploadEl= document.getElementById(prefix + '-upload');
-
+  const toggle   = document.querySelectorAll(`#sig-${prefix} .sig-toggle button`);
+  const drawEl   = document.getElementById(prefix + '-draw');
+  const uploadEl = document.getElementById(prefix + '-upload');
   toggle[0].classList.toggle('active', mode === 'draw');
   toggle[1].classList.toggle('active', mode === 'upload');
-  drawEl.style.display   = mode === 'draw'   ? 'flex'  : 'none';
-  uploadEl.style.display = mode === 'upload' ? 'flex'  : 'none';
+  drawEl.style.display   = mode === 'draw'   ? 'flex' : 'none';
+  uploadEl.style.display = mode === 'upload' ? 'flex' : 'none';
   drawEl.style.flexDirection   = 'column';
   uploadEl.style.flexDirection = 'column';
-
-  if (mode === 'draw') {
-    clearDraw(prefix);
-  } else {
-    clearUpload(prefix);
-  }
+  if (mode === 'draw') clearDraw(prefix); else clearUpload(prefix);
 }
 
 /* ── Draw pad ── */
@@ -339,65 +326,38 @@ function setupPad(prefix) {
   const canvas = document.getElementById(prefix + '-canvas');
   const outer  = document.getElementById(prefix + '-canvas-outer');
   const hint   = document.getElementById(prefix + '-hint');
-
   function resize() {
     const dpr = window.devicePixelRatio || 1;
     const w   = outer.clientWidth || 300;
-    canvas.width  = w * dpr;
-    canvas.height = 80 * dpr;
-    canvas.style.width  = w + 'px';
-    canvas.style.height = '80px';
+    canvas.width  = w * dpr; canvas.height = 80 * dpr;
+    canvas.style.width = w + 'px'; canvas.style.height = '80px';
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
     ctx.strokeStyle = '#111'; ctx.lineWidth = 2;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   }
-  resize();
-  window.addEventListener('resize', resize);
-
+  resize(); window.addEventListener('resize', resize);
   let drawing = false;
-  function getPos(e) {
-    const rect = canvas.getBoundingClientRect();
-    const src  = e.touches ? e.touches[0] : e;
-    return { x: src.clientX - rect.left, y: src.clientY - rect.top };
-  }
-  function start(e) {
-    e.preventDefault(); drawing = true;
-    hint.style.display = 'none';
-    const ctx = canvas.getContext('2d');
-    const p = getPos(e);
-    ctx.beginPath(); ctx.moveTo(p.x, p.y);
-  }
-  function move(e) {
-    if (!drawing) return;
-    e.preventDefault();
-    const ctx = canvas.getContext('2d');
-    const p = getPos(e);
-    ctx.lineTo(p.x, p.y); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(p.x, p.y);
-  }
+  function getPos(e) { const rect = canvas.getBoundingClientRect(); const src = e.touches ? e.touches[0] : e; return { x: src.clientX - rect.left, y: src.clientY - rect.top }; }
+  function start(e) { e.preventDefault(); drawing = true; hint.style.display = 'none'; const ctx = canvas.getContext('2d'); const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
+  function move(e) { if (!drawing) return; e.preventDefault(); const ctx = canvas.getContext('2d'); const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
   function end() { drawing = false; }
-
-  canvas.addEventListener('mousedown',  start);
-  canvas.addEventListener('mousemove',  move);
-  canvas.addEventListener('mouseup',    end);
-  canvas.addEventListener('mouseleave', end);
+  canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move);
+  canvas.addEventListener('mouseup', end); canvas.addEventListener('mouseleave', end);
   canvas.addEventListener('touchstart', start, { passive: false });
-  canvas.addEventListener('touchmove',  move,  { passive: false });
-  canvas.addEventListener('touchend',   end);
+  canvas.addEventListener('touchmove', move, { passive: false });
+  canvas.addEventListener('touchend', end);
 }
 
 function saveDraw(prefix) {
-  const canvas = document.getElementById(prefix + '-canvas');
-  sigData[prefix] = canvas.toDataURL('image/png');
+  sigData[prefix] = document.getElementById(prefix + '-canvas').toDataURL('image/png');
   document.getElementById(prefix + '-draw-saved').style.display = 'block';
 }
 
 function clearDraw(prefix) {
   const canvas = document.getElementById(prefix + '-canvas');
-  const dpr    = window.devicePixelRatio || 1;
-  const ctx    = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+  const dpr = window.devicePixelRatio || 1;
+  canvas.getContext('2d').clearRect(0, 0, canvas.width/dpr, canvas.height/dpr);
   sigData[prefix] = null;
   document.getElementById(prefix + '-hint').style.display = 'flex';
   document.getElementById(prefix + '-draw-saved').style.display = 'none';
@@ -409,16 +369,13 @@ function setupUpload(prefix) {
   const img  = document.getElementById(prefix + '-upload-img');
   const ph   = document.getElementById(prefix + '-upload-ph');
   const clr  = document.getElementById(prefix + '-upload-clear');
-
   file.addEventListener('change', e => {
     const f = e.target.files[0]; if (!f) return;
     const reader = new FileReader();
     reader.onload = ev => {
       sigData[prefix] = ev.target.result;
-      img.src = ev.target.result;
-      img.style.display = 'block';
-      ph.style.display  = 'none';
-      clr.style.display = 'block';
+      img.src = ev.target.result; img.style.display = 'block';
+      ph.style.display = 'none'; clr.style.display = 'block';
     };
     reader.readAsDataURL(f);
   });
@@ -430,19 +387,14 @@ function clearUpload(prefix) {
   const clr = document.getElementById(prefix + '-upload-clear');
   const file= document.getElementById(prefix + '-file');
   img.src = ''; img.style.display = 'none';
-  ph.style.display  = 'block';
-  clr.style.display = 'none';
-  file.value = '';
-  sigData[prefix] = null;
+  ph.style.display = 'block'; clr.style.display = 'none';
+  file.value = ''; sigData[prefix] = null;
 }
 
-/* initialise emp pad and upload handler only */
 setupPad('emp');
 setupUpload('emp');
-/* default: draw mode visible for emp */
 document.getElementById('emp-upload').style.display = 'none';
 
-/* clear validation highlight on fix */
 ['f-name','f-ssn','f-status','f-month','f-year'].forEach(id => {
   const el = document.getElementById(id);
   const fieldMap = { 'f-name':'field-name','f-ssn':'field-ssn','f-status':'field-status','f-month':'field-month','f-year':'field-year' };
@@ -455,7 +407,7 @@ function getFormData() {
   const rows = [];
   document.querySelectorAll('tr[data-day]').forEach(r => {
     rows.push({
-      day: r.getAttribute('data-day'),
+      day:   r.getAttribute('data-day'),
       start: r.querySelector('.f-start').value,
       end:   r.querySelector('.f-end').value,
       total: r.querySelector('.f-total').value,
@@ -478,120 +430,20 @@ function getFormData() {
   };
 }
 
-/* ── PDF ── */
-function buildPDF(data) {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
-  const ml = 54, mr = 558, pw = mr - ml;
-  let y = 54;
-
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(16);
-  doc.text('Yalobusha County Sheriff\'s Department', ml, y); y += 18;
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-  doc.text('Time and Attendance', ml, y); y += 24;
-
-  const colW = pw / 2;
-  const metaLines = [
-    [['Name:', data.name], ['Last 4 of Social:', data.ssn]],
-    [['Employment Status:', data.status]],
-    [['Current Month:', data.month], ['Current Year:', data.year]]
-  ];
-  metaLines.forEach(row => {
-    row.forEach((item, i) => {
-      const x = ml + i * colW;
-      doc.setFont('helvetica', 'bold'); doc.text(item[0], x, y);
-      const lw = doc.getTextWidth(item[0]) + 4;
-      doc.setFont('helvetica', 'normal'); doc.text(item[1], x + lw, y);
-      doc.line(x + lw, y + 1, x + colW - 6, y + 1);
-    });
-    y += 16;
-  });
-  y += 8;
-
-  const cols = [
-    { label: 'Day',       w: 28 },
-    { label: 'Start',     w: 56 },
-    { label: 'End',       w: 56 },
-    { label: 'Total Hrs', w: 58 },
-    { label: 'Comp Hrs',  w: 58 },
-    { label: 'Sick Hrs',  w: 58 },
-    { label: 'Notes',     w: pw - 28 - 56 - 56 - 58 - 58 - 58 }
-  ];
-  const rowH = 16, hdrH = 20;
-
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-  doc.setFillColor(240, 240, 240);
-  doc.rect(ml, y, pw, hdrH, 'FD');
-  let cx = ml;
-  cols.forEach(col => {
-    doc.text(col.label, cx + 3, y + 13); cx += col.w;
-    if (cx < mr) doc.line(cx, y, cx, y + hdrH);
-  });
-  y += hdrH;
-
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
-  data.rows.forEach(row => {
-    const vals = [row.day, row.start, row.end, row.total, row.comp, row.sick, row.notes];
-    doc.rect(ml, y, pw, rowH); cx = ml;
-    cols.forEach((col, i) => {
-      if (vals[i]) doc.text(String(vals[i]), cx + 3, y + 11);
-      cx += col.w;
-      if (cx < mr) doc.line(cx, y, cx, y + rowH);
-    });
-    y += rowH;
-  });
-
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-  doc.setFillColor(240, 240, 240);
-  doc.rect(ml, y, pw, rowH, 'FD');
-  const totLabelW = cols[0].w + cols[1].w + cols[2].w;
-  const lbl = 'Total Hours:';
-  doc.text(lbl, ml + totLabelW - doc.getTextWidth(lbl) - 4, y + 11);
-  cx = ml + totLabelW;
-  [data.totTotal, data.totComp, data.totSick].forEach((val, i) => {
-    if (val) doc.text(val, cx + 3, y + 11);
-    cx += cols[3 + i].w;
-    if (cx < mr) doc.line(cx, y, cx, y + rowH);
-  });
-  y += rowH + 28;
-
-  const sigW = (pw - 32) / 2;
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
-  doc.text('Employee Signature:', ml, y);
-  doc.text('Chief Deputy Signature:', ml + sigW + 32, y);
-  y += 8;
-  const sigH = 52;
-
-  // Employee: signature image sits above a solid line, no box
-  if (data.empSrc && data.empSrc.startsWith('data:image')) {
-    try { doc.addImage(data.empSrc, 'PNG', ml, y, sigW, sigH - 10); } catch(e) {}
-  }
-  doc.line(ml, y + sigH, ml + sigW, y + sigH);
-
-  // Chief Deputy: blank line only
-  doc.line(ml + sigW + 32, y + sigH, ml + sigW + 32 + sigW, y + sigH);
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
-  doc.setTextColor(130, 130, 130);
-  doc.text('Sign here', ml + sigW + 34, y + sigH + 9);
-  doc.setTextColor(0, 0, 0);
-
-  return doc;
-}
-
+/* ── Validation ── */
 function validateForm() {
   const checks = [
-    { id: 'f-name',   fieldId: 'field-name',   label: 'Name',               test: v => v.trim().length > 0 },
-    { id: 'f-ssn',    fieldId: 'field-ssn',    label: 'Last 4 of Social',   test: v => v.trim().length === 4 },
-    { id: 'f-status', fieldId: 'field-status', label: 'Employment Status',  test: v => v !== '' },
-    { id: 'f-month',  fieldId: 'field-month',  label: 'Month',              test: v => v !== '' },
-    { id: 'f-year',   fieldId: 'field-year',   label: 'Year',               test: v => /^\d{4}$/.test(v.trim()) }
+    { id: 'f-name',   fieldId: 'field-name',   label: 'Name',              test: v => v.trim().length > 0 },
+    { id: 'f-ssn',    fieldId: 'field-ssn',    label: 'Last 4 of Social',  test: v => v.trim().length === 4 },
+    { id: 'f-status', fieldId: 'field-status', label: 'Employment Status', test: v => v !== '' },
+    { id: 'f-month',  fieldId: 'field-month',  label: 'Month',             test: v => v !== '' },
+    { id: 'f-year',   fieldId: 'field-year',   label: 'Year',              test: v => /^\d{4}$/.test(v.trim()) }
   ];
-  const missing = [];
-  let valid = true;
+  const missing = []; let valid = true;
   checks.forEach(c => {
-    const el    = document.getElementById(c.id);
+    const el = document.getElementById(c.id);
     const field = document.getElementById(c.fieldId);
-    const pass  = c.test(el.value);
+    const pass = c.test(el.value);
     field.classList.toggle('field-invalid', !pass);
     if (!pass) { missing.push(c.label); valid = false; }
   });
@@ -606,11 +458,94 @@ function validateForm() {
   return valid;
 }
 
+/* ── PDF ── */
+function buildPDF(data) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+  const ml = 36, mr = 576, pw = mr - ml;
+  let y = 36;
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(14);
+  doc.text("Yalobusha County Sheriff's Department", ml, y); y += 16;
+  doc.setFont('helvetica','normal'); doc.setFontSize(9);
+  doc.text('Time and Attendance', ml, y); y += 20;
+
+  const colW = pw / 2;
+  [[['Name:', data.name],['Last 4 of Social:', data.ssn]],[['Employment Status:', data.status]],[['Current Month:', data.month],['Current Year:', data.year]]].forEach(row => {
+    row.forEach((item, i) => {
+      const x = ml + i * colW;
+      doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.text(item[0], x, y);
+      const lw = doc.getTextWidth(item[0]) + 4;
+      doc.setFont('helvetica','normal'); doc.text(item[1]||'', x + lw, y);
+      doc.line(x + lw, y + 1, x + colW - 6, y + 1);
+    }); y += 14;
+  }); y += 6;
+
+  const cols = [
+    {label:'Day',w:26},{label:'Start',w:52},{label:'End',w:52},
+    {label:'Total Hrs',w:54},{label:'Comp Hrs',w:54},{label:'Sick Hrs',w:54},
+    {label:'Notes',w:pw-26-52-52-54-54-54}
+  ];
+  const rowH = 13, hdrH = 16;
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setFillColor(240,240,240);
+  doc.rect(ml, y, pw, hdrH, 'FD');
+  let cx = ml;
+  cols.forEach(col => { doc.text(col.label, cx+2, y+11); cx += col.w; if(cx<mr) doc.line(cx,y,cx,y+hdrH); });
+  y += hdrH;
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+  const allRows = [];
+  for (let day = 1; day <= 31; day++) {
+    const found = (data.rows||[]).find(r => parseInt(r.day) === day);
+    allRows.push(found || { day: String(day), start:'', end:'', total:'', comp:'', sick:'', notes:'' });
+  }
+  allRows.forEach(row => {
+    const vals = [row.day, row.start, row.end, row.total, row.comp, row.sick, row.notes];
+    doc.rect(ml, y, pw, rowH); cx = ml;
+    cols.forEach((col, i) => {
+      if (vals[i]) doc.text(String(vals[i]), cx+2, y+9);
+      cx += col.w; if (cx < mr) doc.line(cx, y, cx, y+rowH);
+    });
+    y += rowH;
+  });
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setFillColor(240,240,240);
+  doc.rect(ml, y, pw, rowH, 'FD');
+  const totW = cols[0].w + cols[1].w + cols[2].w;
+  doc.text('Total Hours:', ml+totW-doc.getTextWidth('Total Hours:')-4, y+9);
+  cx = ml + totW;
+  [data.totTotal, data.totComp, data.totSick].forEach((val, i) => {
+    if (val) doc.text(val, cx+2, y+9);
+    cx += cols[3+i].w; if (cx < mr) doc.line(cx, y, cx, y+rowH);
+  });
+  y += rowH + 20;
+
+  const sigW = (pw - 32) / 2;
+  const sigH = 44;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.text('Employee Signature:', ml, y);
+  doc.text('Chief Deputy Signature:', ml+sigW+32, y);
+  y += 6;
+
+  if (data.empSrc && data.empSrc.startsWith('data:image')) {
+    try { doc.addImage(data.empSrc, 'PNG', ml, y, sigW, sigH-8); } catch(e) {}
+  }
+  doc.line(ml, y+sigH, ml+sigW, y+sigH);
+  doc.line(ml+sigW+32, y+sigH, ml+sigW+32+sigW, y+sigH);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7);
+  doc.setTextColor(130,130,130);
+  doc.text('Sign here', ml+sigW+34, y+sigH+8);
+  doc.setTextColor(0,0,0);
+
+  return doc;
+}
+
 function downloadPDF() {
   if (!validateForm()) return;
-  const data  = getFormData();
-  const doc   = buildPDF(data);
-  const name  = data.name  ? data.name.replace(/\s+/g, '_') : 'Name';
+  const data = getFormData();
+  const doc  = buildPDF(data);
+  const name  = data.name  ? data.name.replace(/\s+/g,'_') : 'Name';
   const month = data.month || 'Month';
   const year  = data.year  || 'Year';
   doc.save(`${name}_${month}_${year}_Timesheet.pdf`);
@@ -621,8 +556,7 @@ async function submitTimesheet() {
   const data = getFormData();
   const btn = document.getElementById('submit-btn');
   const statusEl = document.getElementById('submit-status');
-  btn.disabled = true;
-  btn.innerHTML = 'Submitting&hellip;';
+  btn.disabled = true; btn.innerHTML = 'Submitting&hellip;';
   statusEl.style.display = 'none';
   try {
     const res = await fetch('/.netlify/functions/submit-timesheet', {
