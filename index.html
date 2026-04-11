@@ -8,6 +8,21 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; }
   body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 16px; color: #111; }
+
+  /* PIN screen */
+  .pin-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: -16px; background: #f4f4f4; }
+  .pin-card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 36px 32px; width: 100%; max-width: 360px; text-align: center; }
+  .pin-card h1 { font-size: 18px; font-weight: bold; margin: 0 0 4px; }
+  .pin-card p { font-size: 13px; color: #888; margin: 0 0 24px; }
+  .pin-badge { display: inline-block; background: #1a3a6b; color: #fff; font-size: 11px; padding: 3px 12px; border-radius: 20px; margin-bottom: 20px; }
+  .pin-input { width: 100%; padding: 14px; font-size: 22px; text-align: center; letter-spacing: 8px; border: 1px solid #ccc; border-radius: 8px; background: #f7f7f7; outline: none; font-family: Arial, sans-serif; }
+  .pin-input:focus { border-color: #1a5dc8; background: #fff; }
+  .pin-btn { width: 100%; margin-top: 14px; padding: 12px; font-size: 15px; font-weight: bold; background: #1a5dc8; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-family: Arial, sans-serif; }
+  .pin-btn:hover { background: #154fa8; }
+  .pin-error { background: #fff0f0; border: 1px solid #f0b0b0; border-radius: 7px; padding: 9px 14px; font-size: 13px; color: #a00; margin-top: 12px; display: none; }
+
+  /* Timesheet */
+  .timesheet-screen { display: none; }
   .card { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; max-width: 860px; margin: 0 auto; }
   h1 { font-size: 18px; font-weight: bold; margin: 0 0 2px; }
   .subtitle { font-size: 13px; color: #555; margin: 0 0 16px; }
@@ -82,6 +97,21 @@
 </head>
 <body>
 
+<!-- PIN Screen -->
+<div class="pin-screen" id="pin-screen">
+  <div class="pin-card">
+    <h1>Y-TRAK</h1>
+    <p>Yalobusha County Sheriff's Department</p>
+    <span class="pin-badge">Employee Timesheet Portal</span>
+    <br>
+    <input type="password" class="pin-input" id="pin-input" maxlength="10" inputmode="numeric" placeholder="• • • • •" onkeydown="if(event.key==='Enter') checkPin()">
+    <button class="pin-btn" onclick="checkPin()">Enter</button>
+    <div class="pin-error" id="pin-error">Incorrect PIN. Please try again.</div>
+  </div>
+</div>
+
+<!-- Timesheet Screen -->
+<div class="timesheet-screen" id="timesheet-screen">
 <div class="card">
   <h1>Yalobusha County Sheriff's Department</h1>
   <p class="subtitle">Time and Attendance</p>
@@ -192,7 +222,7 @@
   </div>
 
   <div class="info-banner">
-    <strong>How to submit:</strong> Fill out your timesheet and click <em>Submit Timesheet</em>. Your supervisor will be notified and can review it in the portal. Use <em>Download PDF</em> to save a copy for your records.
+    <strong>How to submit:</strong> Fill out your timesheet and click <em>Submit Timesheet</em>. Your supervisor will review it in the portal. Use <em>Download PDF</em> to save a copy for your records.
   </div>
 
   <div id="submit-status" style="display:none; padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:12px; line-height:1.6;"></div>
@@ -213,8 +243,31 @@
     </button>
   </div>
 </div>
+</div>
 
 <script>
+/* ── PIN check ── */
+const CORRECT_PIN = '38965';
+
+function checkPin() {
+  const val = document.getElementById('pin-input').value.trim();
+  const err = document.getElementById('pin-error');
+  if (val === CORRECT_PIN) {
+    document.getElementById('pin-screen').style.display = 'none';
+    document.getElementById('timesheet-screen').style.display = 'block';
+    sessionStorage.setItem('ytrak-auth', '1');
+  } else {
+    err.style.display = 'block';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-input').focus();
+  }
+}
+
+if (sessionStorage.getItem('ytrak-auth') === '1') {
+  document.getElementById('pin-screen').style.display = 'none';
+  document.getElementById('timesheet-screen').style.display = 'block';
+}
+
 /* ── Time parsing with auto-format ── */
 function parseTime(v) {
   if (!v) return null;
@@ -226,9 +279,7 @@ function parseTime(v) {
   } else if (/^\d{3,4}$/.test(v)) {
     if (v.length === 3) { h = parseInt(v[0]); min = parseInt(v.slice(1)); }
     else { h = parseInt(v.slice(0,2)); min = parseInt(v.slice(2)); }
-  } else {
-    return null;
-  }
+  } else { return null; }
   if (h > 23 || min > 59) return null;
   return h * 60 + min;
 }
@@ -276,22 +327,14 @@ for (let d = 1; d <= 31; d++) {
     <td><input class="ci f-sick"  inputmode="numeric" placeholder=""></td>
     <td><input class="ci f-notes" placeholder=""></td>`;
   tbody.appendChild(tr);
-
   const st = tr.querySelector('.f-start'), en = tr.querySelector('.f-end'), tot = tr.querySelector('.f-total');
-
   function makeUpd(s, e, t) {
     return function() { const h = calcHours(s.value, e.value); t.value = h !== null ? h : ''; recalcTotals(); };
   }
   const upd = makeUpd(st, en, tot);
-
   function autoFormat(inp, callback) {
-    return function() {
-      const formatted = formatTime(inp.value);
-      if (formatted !== null) inp.value = formatted;
-      callback();
-    };
+    return function() { const formatted = formatTime(inp.value); if (formatted !== null) inp.value = formatted; callback(); };
   }
-
   st.addEventListener('blur', autoFormat(st, upd));
   en.addEventListener('blur', autoFormat(en, upd));
   tr.querySelector('.f-comp').addEventListener('input', recalcTotals);
@@ -302,13 +345,12 @@ for (let d = 1; d <= 31; d++) {
   });
 }
 
-/* ── Signature mode ── */
+/* ── Signature ── */
 const sigMode = { emp: 'draw' };
 const sigData  = { emp: null  };
 
 function setSigMode(prefix, mode) {
-  sigMode[prefix] = mode;
-  sigData[prefix] = null;
+  sigMode[prefix] = mode; sigData[prefix] = null;
   const toggle   = document.querySelectorAll(`#sig-${prefix} .sig-toggle button`);
   const drawEl   = document.getElementById(prefix + '-draw');
   const uploadEl = document.getElementById(prefix + '-upload');
@@ -316,24 +358,20 @@ function setSigMode(prefix, mode) {
   toggle[1].classList.toggle('active', mode === 'upload');
   drawEl.style.display   = mode === 'draw'   ? 'flex' : 'none';
   uploadEl.style.display = mode === 'upload' ? 'flex' : 'none';
-  drawEl.style.flexDirection   = 'column';
-  uploadEl.style.flexDirection = 'column';
+  drawEl.style.flexDirection = 'column'; uploadEl.style.flexDirection = 'column';
   if (mode === 'draw') clearDraw(prefix); else clearUpload(prefix);
 }
 
-/* ── Draw pad ── */
 function setupPad(prefix) {
   const canvas = document.getElementById(prefix + '-canvas');
   const outer  = document.getElementById(prefix + '-canvas-outer');
   const hint   = document.getElementById(prefix + '-hint');
   function resize() {
-    const dpr = window.devicePixelRatio || 1;
-    const w   = outer.clientWidth || 300;
-    canvas.width  = w * dpr; canvas.height = 80 * dpr;
+    const dpr = window.devicePixelRatio || 1, w = outer.clientWidth || 300;
+    canvas.width = w * dpr; canvas.height = 80 * dpr;
     canvas.style.width = w + 'px'; canvas.style.height = '80px';
     const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
-    ctx.strokeStyle = '#111'; ctx.lineWidth = 2;
+    ctx.scale(dpr, dpr); ctx.strokeStyle = '#111'; ctx.lineWidth = 2;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   }
   resize(); window.addEventListener('resize', resize);
@@ -363,7 +401,6 @@ function clearDraw(prefix) {
   document.getElementById(prefix + '-draw-saved').style.display = 'none';
 }
 
-/* ── Upload ── */
 function setupUpload(prefix) {
   const file = document.getElementById(prefix + '-file');
   const img  = document.getElementById(prefix + '-upload-img');
@@ -402,35 +439,14 @@ document.getElementById('emp-upload').style.display = 'none';
   el.addEventListener('change', () => document.getElementById(fieldMap[id]).classList.remove('field-invalid'));
 });
 
-/* ── Form data ── */
 function getFormData() {
   const rows = [];
   document.querySelectorAll('tr[data-day]').forEach(r => {
-    rows.push({
-      day:   r.getAttribute('data-day'),
-      start: r.querySelector('.f-start').value,
-      end:   r.querySelector('.f-end').value,
-      total: r.querySelector('.f-total').value,
-      comp:  r.querySelector('.f-comp').value,
-      sick:  r.querySelector('.f-sick').value,
-      notes: r.querySelector('.f-notes').value
-    });
+    rows.push({ day: r.getAttribute('data-day'), start: r.querySelector('.f-start').value, end: r.querySelector('.f-end').value, total: r.querySelector('.f-total').value, comp: r.querySelector('.f-comp').value, sick: r.querySelector('.f-sick').value, notes: r.querySelector('.f-notes').value });
   });
-  return {
-    name:     document.getElementById('f-name').value   || '',
-    ssn:      document.getElementById('f-ssn').value    || '',
-    status:   document.getElementById('f-status').value,
-    month:    document.getElementById('f-month').value  || '',
-    year:     document.getElementById('f-year').value   || '',
-    totTotal: document.getElementById('tot-total').textContent,
-    totComp:  document.getElementById('tot-comp').textContent,
-    totSick:  document.getElementById('tot-sick').textContent,
-    empSrc:   sigData.emp || '',
-    rows
-  };
+  return { name: document.getElementById('f-name').value||'', ssn: document.getElementById('f-ssn').value||'', status: document.getElementById('f-status').value, month: document.getElementById('f-month').value||'', year: document.getElementById('f-year').value||'', totTotal: document.getElementById('tot-total').textContent, totComp: document.getElementById('tot-comp').textContent, totSick: document.getElementById('tot-sick').textContent, empSrc: sigData.emp||'', rows };
 }
 
-/* ── Validation ── */
 function validateForm() {
   const checks = [
     { id: 'f-name',   fieldId: 'field-name',   label: 'Name',              test: v => v.trim().length > 0 },
@@ -441,35 +457,26 @@ function validateForm() {
   ];
   const missing = []; let valid = true;
   checks.forEach(c => {
-    const el = document.getElementById(c.id);
-    const field = document.getElementById(c.fieldId);
+    const el = document.getElementById(c.id), field = document.getElementById(c.fieldId);
     const pass = c.test(el.value);
     field.classList.toggle('field-invalid', !pass);
     if (!pass) { missing.push(c.label); valid = false; }
   });
   const banner = document.getElementById('val-banner');
-  if (!valid) {
-    document.getElementById('val-missing').textContent = missing.join(', ');
-    banner.style.display = 'block';
-    banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  } else {
-    banner.style.display = 'none';
-  }
+  if (!valid) { document.getElementById('val-missing').textContent = missing.join(', '); banner.style.display = 'block'; banner.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  else { banner.style.display = 'none'; }
   return valid;
 }
 
-/* ── PDF ── */
 function buildPDF(data) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
   const ml = 36, mr = 576, pw = mr - ml;
   let y = 36;
-
   doc.setFont('helvetica','bold'); doc.setFontSize(14);
   doc.text("Yalobusha County Sheriff's Department", ml, y); y += 16;
   doc.setFont('helvetica','normal'); doc.setFontSize(9);
   doc.text('Time and Attendance', ml, y); y += 20;
-
   const colW = pw / 2;
   [[['Name:', data.name],['Last 4 of Social:', data.ssn]],[['Employment Status:', data.status]],[['Current Month:', data.month],['Current Year:', data.year]]].forEach(row => {
     row.forEach((item, i) => {
@@ -480,20 +487,13 @@ function buildPDF(data) {
       doc.line(x + lw, y + 1, x + colW - 6, y + 1);
     }); y += 14;
   }); y += 6;
-
-  const cols = [
-    {label:'Day',w:26},{label:'Start',w:52},{label:'End',w:52},
-    {label:'Total Hrs',w:54},{label:'Comp Hrs',w:54},{label:'Sick Hrs',w:54},
-    {label:'Notes',w:pw-26-52-52-54-54-54}
-  ];
+  const cols = [{label:'Day',w:26},{label:'Start',w:52},{label:'End',w:52},{label:'Total Hrs',w:54},{label:'Comp Hrs',w:54},{label:'Sick Hrs',w:54},{label:'Notes',w:pw-26-52-52-54-54-54}];
   const rowH = 13, hdrH = 16;
-
   doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setFillColor(240,240,240);
   doc.rect(ml, y, pw, hdrH, 'FD');
   let cx = ml;
   cols.forEach(col => { doc.text(col.label, cx+2, y+11); cx += col.w; if(cx<mr) doc.line(cx,y,cx,y+hdrH); });
   y += hdrH;
-
   doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
   const allRows = [];
   for (let day = 1; day <= 31; day++) {
@@ -503,31 +503,21 @@ function buildPDF(data) {
   allRows.forEach(row => {
     const vals = [row.day, row.start, row.end, row.total, row.comp, row.sick, row.notes];
     doc.rect(ml, y, pw, rowH); cx = ml;
-    cols.forEach((col, i) => {
-      if (vals[i]) doc.text(String(vals[i]), cx+2, y+9);
-      cx += col.w; if (cx < mr) doc.line(cx, y, cx, y+rowH);
-    });
+    cols.forEach((col, i) => { if (vals[i]) doc.text(String(vals[i]), cx+2, y+9); cx += col.w; if (cx < mr) doc.line(cx, y, cx, y+rowH); });
     y += rowH;
   });
-
   doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setFillColor(240,240,240);
   doc.rect(ml, y, pw, rowH, 'FD');
   const totW = cols[0].w + cols[1].w + cols[2].w;
   doc.text('Total Hours:', ml+totW-doc.getTextWidth('Total Hours:')-4, y+9);
   cx = ml + totW;
-  [data.totTotal, data.totComp, data.totSick].forEach((val, i) => {
-    if (val) doc.text(val, cx+2, y+9);
-    cx += cols[3+i].w; if (cx < mr) doc.line(cx, y, cx, y+rowH);
-  });
+  [data.totTotal, data.totComp, data.totSick].forEach((val, i) => { if (val) doc.text(val, cx+2, y+9); cx += cols[3+i].w; if (cx < mr) doc.line(cx, y, cx, y+rowH); });
   y += rowH + 20;
-
-  const sigW = (pw - 32) / 2;
-  const sigH = 44;
+  const sigW = (pw - 32) / 2, sigH = 44;
   doc.setFont('helvetica','bold'); doc.setFontSize(9);
   doc.text('Employee Signature:', ml, y);
   doc.text('Chief Deputy Signature:', ml+sigW+32, y);
   y += 6;
-
   if (data.empSrc && data.empSrc.startsWith('data:image')) {
     try { doc.addImage(data.empSrc, 'PNG', ml, y, sigW, sigH-8); } catch(e) {}
   }
@@ -537,7 +527,6 @@ function buildPDF(data) {
   doc.setTextColor(130,130,130);
   doc.text('Sign here', ml+sigW+34, y+sigH+8);
   doc.setTextColor(0,0,0);
-
   return doc;
 }
 
@@ -545,10 +534,7 @@ function downloadPDF() {
   if (!validateForm()) return;
   const data = getFormData();
   const doc  = buildPDF(data);
-  const name  = data.name  ? data.name.replace(/\s+/g,'_') : 'Name';
-  const month = data.month || 'Month';
-  const year  = data.year  || 'Year';
-  doc.save(`${name}_${month}_${year}_Timesheet.pdf`);
+  doc.save(`${(data.name||'Name').replace(/\s+/g,'_')}_${data.month||'Month'}_${data.year||'Year'}_Timesheet.pdf`);
 }
 
 async function submitTimesheet() {
@@ -560,18 +546,14 @@ async function submitTimesheet() {
   statusEl.style.display = 'none';
   try {
     const res = await fetch('/.netlify/functions/submit-timesheet', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
     });
     const json = await res.json();
     if (json.success) {
       statusEl.style.cssText = 'display:block;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;line-height:1.6;background:#eaf7ee;border:1px solid #a0d8b0;color:#1a6a30;';
       statusEl.textContent = '✓ Timesheet submitted successfully! Your supervisor will review it shortly.';
       btn.innerHTML = '✓ Submitted';
-    } else {
-      throw new Error(json.error || 'Unknown error');
-    }
+    } else { throw new Error(json.error || 'Unknown error'); }
   } catch(err) {
     statusEl.style.cssText = 'display:block;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;line-height:1.6;background:#fff0f0;border:1px solid #f0b0b0;color:#a00;';
     statusEl.textContent = '✗ Submission failed: ' + err.message;
