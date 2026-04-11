@@ -30,6 +30,7 @@
   tbody tr:hover td { background: #f8f9ff; }
   .badge { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: bold; }
   .badge-pending { background: #fff8e0; color: #8a6000; border: 1px solid #e0c060; }
+  .badge-reviewed { background: #e8f0fe; color: #1a3a6b; border: 1px solid #aac4f0; }
   .badge-approved { background: #eaf7ee; color: #1a6a30; border: 1px solid #a0d8b0; }
   .review-btn { padding: 6px 14px; font-size: 13px; border: 1px solid #1a5dc8; border-radius: 6px; background: #fff; color: #1a5dc8; cursor: pointer; font-family: Arial, sans-serif; }
   .review-btn:hover { background: #e8f0ff; }
@@ -52,15 +53,15 @@
 
 <div class="container">
   <div class="stats">
-    <div class="stat"><p class="stat-num" id="stat-pending">—</p><p class="stat-label">Pending review</p></div>
+    <div class="stat"><p class="stat-num" id="stat-pending">—</p><p class="stat-label" id="stat-pending-label">Pending review</p></div>
     <div class="stat"><p class="stat-num" id="stat-approved">—</p><p class="stat-label">Approved this month</p></div>
     <div class="stat"><p class="stat-num" id="stat-total">—</p><p class="stat-label">Total submissions</p></div>
   </div>
 
-  <div class="tabs">
-    <button class="tab active" onclick="showTab('pending')">Pending Approval</button>
-    <button class="tab" onclick="showTab('approved')">Approved</button>
-    <button class="tab" onclick="showTab('all')">All Timesheets</button>
+  <div class="tabs" id="tab-bar">
+    <button class="tab active" id="tab-pending" onclick="showTab('pending')">Pending</button>
+    <button class="tab" id="tab-approved" onclick="showTab('approved')">Approved</button>
+    <button class="tab" id="tab-all" onclick="showTab('all')">All Timesheets</button>
   </div>
 
   <div class="card">
@@ -88,12 +89,20 @@ const sb = supabase.createClient(
 
 let allSheets = [];
 let currentTab = 'pending';
+let currentSupervisor = null;
 
 async function init() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { window.location.href = '/supervisor.html'; return; }
-  const { data: profile } = await sb.from('supervisors').select('name').eq('id', session.user.id).single();
+
+  const { data: profile } = await sb.from('supervisors').select('*').eq('id', session.user.id).single();
+  currentSupervisor = profile;
   document.getElementById('user-name').textContent = profile?.name || session.user.email;
+
+  if (profile?.role === 'final') {
+    document.getElementById('stat-pending-label').textContent = 'Awaiting final approval';
+  }
+
   await loadSheets();
 }
 
@@ -106,48 +115,64 @@ async function loadSheets() {
   if (error) { document.getElementById('loading').textContent = 'Error loading timesheets.'; return; }
 
   allSheets = data || [];
-  const pending = allSheets.filter(s => s.status === 'pending').length;
   const thisMonth = new Date().toLocaleString('default', { month: 'long' });
   const approvedMonth = allSheets.filter(s => s.status === 'approved' && s.month === thisMonth).length;
 
-  document.getElementById('stat-pending').textContent = pending;
+  let pendingCount = 0;
+  if (currentSupervisor?.role === 'final') {
+    pendingCount = allSheets.filter(s => s.status === 'pending' || s.status === 'reviewed').length;
+  } else {
+    pendingCount = allSheets.filter(s => s.status === 'pending').length;
+  }
+
+  document.getElementById('stat-pending').textContent = pendingCount;
   document.getElementById('stat-approved').textContent = approvedMonth;
   document.getElementById('stat-total').textContent = allSheets.length;
 
   renderTab(currentTab);
 }
 
+function getBadge(status) {
+  if (status === 'approved') return '<span class="badge badge-approved">Approved</span>';
+  if (status === 'reviewed') return '<span class="badge badge-reviewed">Initial Review Complete</span>';
+  return '<span class="badge badge-pending">Pending</span>';
+}
+
 function renderTab(tab) {
   currentTab = tab;
-  document.querySelectorAll('.tab').forEach((t, i) => {
-    t.classList.toggle('active', ['pending','approved','all'][i] === tab);
-  });
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
 
   let rows = allSheets;
-  if (tab === 'pending')  rows = allSheets.filter(s => s.status === 'pending');
-  if (tab === 'approved') rows = allSheets.filter(s => s.status === 'approved');
+
+  if (tab === 'pending') {
+    if (currentSupervisor?.role === 'final') {
+      rows = allSheets.filter(s => s.status === 'pending' || s.status === 'reviewed');
+    } else {
+      rows = allSheets.filter(s => s.status === 'pending');
+    }
+  } else if (tab === 'approved') {
+    rows = allSheets.filter(s => s.status === 'approved');
+  }
 
   document.getElementById('loading').style.display = 'none';
 
   if (rows.length === 0) {
     document.getElementById('sheet-table').style.display = 'none';
     document.getElementById('sheet-empty').style.display = 'block';
-    document.getElementById('sheet-empty').textContent = tab === 'pending' ? 'No timesheets pending approval.' : 'No timesheets found.';
+    document.getElementById('sheet-empty').textContent = tab === 'pending' ? 'No timesheets pending.' : 'No timesheets found.';
     return;
   }
 
   const tbody = document.getElementById('sheet-body');
   tbody.innerHTML = rows.map(s => {
     const date = new Date(s.submitted_at).toLocaleDateString();
-    const badge = s.status === 'pending'
-      ? '<span class="badge badge-pending">Pending</span>'
-      : '<span class="badge badge-approved">Approved</span>';
     return `<tr>
       <td><strong>${s.employee_name}</strong><br><span style="font-size:12px;color:#888;">${s.employment_status}</span></td>
       <td>${s.month} ${s.year}</td>
       <td>${s.total_hours}</td>
       <td>${date}</td>
-      <td>${badge}</td>
+      <td>${getBadge(s.status)}</td>
       <td><button class="review-btn" onclick="window.location.href='/review.html?id=${s.id}'">Review</button></td>
     </tr>`;
   }).join('');
