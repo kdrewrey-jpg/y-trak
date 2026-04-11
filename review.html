@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Review Timesheet — Y-TRAK</title>
+<title>Y-TRAK Supervisors</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -244,34 +244,20 @@ function renderSheet(d) {
   document.getElementById('m-month').textContent = d.month;
   document.getElementById('m-year').textContent = d.year;
   document.getElementById('m-submitted').textContent = new Date(d.submitted_at).toLocaleString();
-
   const rows = d.rows || [];
   document.getElementById('rows-body').innerHTML = rows.map(r => `<tr>
     <td>${r.day}</td><td>${r.start||''}</td><td>${r.end||''}</td>
     <td>${r.total||''}</td><td>${r.comp||''}</td><td>${r.sick||''}</td><td>${r.notes||''}</td>
   </tr>`).join('');
-
   document.getElementById('f-total').textContent = d.total_hours;
   document.getElementById('f-comp').textContent  = d.comp_hours;
   document.getElementById('f-sick').textContent  = d.sick_hours;
   document.getElementById('bar-total').textContent = d.total_hours;
   document.getElementById('bar-comp').textContent  = d.comp_hours;
   document.getElementById('bar-sick').textContent  = d.sick_hours;
-
-  if (d.emp_signature) {
-    const img = document.getElementById('emp-sig');
-    img.src = d.emp_signature; img.style.display = 'block';
-  }
-  if (d.dep_signature) {
-    const img = document.getElementById('dep-sig');
-    img.src = d.dep_signature; img.style.display = 'block';
-    document.getElementById('dep-sig-placeholder').style.display = 'none';
-  }
-  if (d.reviewed_by_name) {
-    const b = document.getElementById('banner-reviewed');
-    b.textContent = `✓ Initial review completed by ${d.reviewed_by_name} on ${new Date(d.reviewed_at).toLocaleString()}`;
-    b.style.display = 'block';
-  }
+  if (d.emp_signature) { const img = document.getElementById('emp-sig'); img.src = d.emp_signature; img.style.display = 'block'; }
+  if (d.dep_signature) { const img = document.getElementById('dep-sig'); img.src = d.dep_signature; img.style.display = 'block'; document.getElementById('dep-sig-placeholder').style.display = 'none'; }
+  if (d.reviewed_by_name) { const b = document.getElementById('banner-reviewed'); b.textContent = `✓ Initial review completed by ${d.reviewed_by_name} on ${new Date(d.reviewed_at).toLocaleString()}`; b.style.display = 'block'; }
   if (d.status === 'approved') {
     const b = document.getElementById('banner-approved');
     b.textContent = `✓ Approved by ${d.approved_by_name} on ${new Date(d.approved_at).toLocaleString()}`;
@@ -289,11 +275,7 @@ function renderSheet(d) {
 }
 
 function handleApprove() {
-  if (currentSupervisor?.role === 'reviewer') {
-    submitInitialReview();
-  } else {
-    openSignModal();
-  }
+  if (currentSupervisor?.role === 'reviewer') { submitInitialReview(); } else { openSignModal(); }
 }
 
 async function submitInitialReview() {
@@ -308,9 +290,7 @@ async function submitInitialReview() {
       body: JSON.stringify({ status: 'reviewed', reviewed_by_name: currentSupervisor.name, reviewed_at: now })
     });
     if (!res.ok) throw new Error('Failed — status ' + res.status);
-    sheetData.status = 'reviewed';
-    sheetData.reviewed_by_name = currentSupervisor.name;
-    sheetData.reviewed_at = now;
+    sheetData.status = 'reviewed'; sheetData.reviewed_by_name = currentSupervisor.name; sheetData.reviewed_at = now;
     const b = document.getElementById('banner-reviewed');
     b.textContent = `✓ Initial review completed by ${currentSupervisor.name} on ${new Date(now).toLocaleString()}`;
     b.style.display = 'block';
@@ -329,13 +309,11 @@ function setupCanvas() {
   const wrap   = document.getElementById('canvas-wrap');
   const hint   = document.getElementById('canvas-hint');
   function resize() {
-    const dpr = window.devicePixelRatio || 1;
-    const w = wrap.clientWidth;
+    const dpr = window.devicePixelRatio || 1, w = wrap.clientWidth;
     canvas.width = w * dpr; canvas.height = 120 * dpr;
     canvas.style.width = w + 'px'; canvas.style.height = '120px';
     const ctx = canvas.getContext('2d');
-    ctx.scale(dpr, dpr);
-    ctx.strokeStyle = '#111'; ctx.lineWidth = 2;
+    ctx.scale(dpr, dpr); ctx.strokeStyle = '#111'; ctx.lineWidth = 2;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   }
   resize(); window.addEventListener('resize', resize);
@@ -396,16 +374,13 @@ async function confirmFinalApproval() {
   confirmBtn.disabled = true; confirmBtn.textContent = 'Approving…';
   try {
     const res = await fetch('/.netlify/functions/approve-timesheet', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: sheetData.id, supervisor_name: currentSupervisor.name, supervisor_email: currentSupervisor.email, dep_signature: sigData })
     });
     const json = await res.json();
     if (!json.success) throw new Error(json.error || 'Failed');
-    sheetData.status = 'approved';
-    sheetData.approved_by_name = currentSupervisor.name;
-    sheetData.approved_at = new Date().toISOString();
-    sheetData.dep_signature = sigData;
+    sheetData.status = 'approved'; sheetData.approved_by_name = currentSupervisor.name;
+    sheetData.approved_at = new Date().toISOString(); sheetData.dep_signature = sigData;
     const depImg = document.getElementById('dep-sig');
     depImg.src = sigData; depImg.style.display = 'block';
     document.getElementById('dep-sig-placeholder').style.display = 'none';
@@ -466,8 +441,7 @@ function getSigDimensions(src, maxW, maxH) {
     const img = new Image();
     img.onload = () => {
       const ratio = img.naturalHeight / img.naturalWidth;
-      let w = Math.min(img.naturalWidth, maxW);
-      let h = w * ratio;
+      let w = Math.min(img.naturalWidth, maxW), h = w * ratio;
       if (h > maxH) { h = maxH; w = h / ratio; }
       resolve({ w, h });
     };
@@ -483,20 +457,20 @@ async function buildPDF() {
   const ml = 36, mr = 576, pw = mr - ml;
   let y = 36;
 
-  doc.setFont('helvetica','bold'); doc.setFontSize(14);
-  doc.text("Yalobusha County Sheriff's Department", ml, y); y += 16;
-  doc.setFont('helvetica','normal'); doc.setFontSize(9);
-  doc.text('Time and Attendance', ml, y); y += 20;
+  doc.setFont('helvetica','bold'); doc.setFontSize(14.5);
+  doc.text("Yalobusha County Sheriff's Department", ml, y); y += 17;
+  doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
+  doc.text('Time and Attendance', ml, y); y += 21;
 
   const colW = pw / 2;
   [[['Name:', d.employee_name],['Last 4 of Social:', d.ssn_last4]],[['Employment Status:', d.employment_status]],[['Current Month:', d.month],['Current Year:', d.year]]].forEach(row => {
     row.forEach((item, i) => {
       const x = ml + i * colW;
-      doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.text(item[0], x, y);
+      doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.text(item[0], x, y);
       const lw = doc.getTextWidth(item[0]) + 4;
       doc.setFont('helvetica','normal'); doc.text(item[1]||'', x + lw, y);
       doc.line(x + lw, y + 1, x + colW - 6, y + 1);
-    }); y += 14;
+    }); y += 15;
   }); y += 6;
 
   const cols = [
@@ -504,15 +478,15 @@ async function buildPDF() {
     {label:'Total Hrs',w:54},{label:'Comp Hrs',w:54},{label:'Sick Hrs',w:54},
     {label:'Notes',w:pw-26-52-52-54-54-54}
   ];
-  const rowH = 13, hdrH = 16;
+  const rowH = 13.5, hdrH = 16.5;
 
-  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setFillColor(240,240,240);
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setFillColor(240,240,240);
   doc.rect(ml, y, pw, hdrH, 'FD');
   let cx = ml;
-  cols.forEach(col => { doc.text(col.label, cx+2, y+11); cx += col.w; if(cx<mr) doc.line(cx,y,cx,y+hdrH); });
+  cols.forEach(col => { doc.text(col.label, cx+2, y+11.5); cx += col.w; if(cx<mr) doc.line(cx,y,cx,y+hdrH); });
   y += hdrH;
 
-  doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
   const allRows = [];
   for (let day = 1; day <= 31; day++) {
     const found = (d.rows||[]).find(r => parseInt(r.day) === day);
@@ -522,26 +496,25 @@ async function buildPDF() {
     const vals = [row.day, row.start, row.end, row.total, row.comp, row.sick, row.notes];
     doc.rect(ml, y, pw, rowH); cx = ml;
     cols.forEach((col, i) => {
-      if (vals[i]) doc.text(String(vals[i]), cx+2, y+9);
+      if (vals[i]) doc.text(String(vals[i]), cx+2, y+9.5);
       cx += col.w; if (cx < mr) doc.line(cx, y, cx, y+rowH);
     });
     y += rowH;
   });
 
-  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setFillColor(240,240,240);
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setFillColor(240,240,240);
   doc.rect(ml, y, pw, rowH, 'FD');
   const totW = cols[0].w + cols[1].w + cols[2].w;
-  doc.text('Total Hours:', ml+totW-doc.getTextWidth('Total Hours:')-4, y+9);
+  doc.text('Total Hours:', ml+totW-doc.getTextWidth('Total Hours:')-4, y+9.5);
   cx = ml + totW;
   [d.total_hours, d.comp_hours, d.sick_hours].forEach((val, i) => {
-    if (val) doc.text(val, cx+2, y+9);
+    if (val) doc.text(val, cx+2, y+9.5);
     cx += cols[3+i].w; if (cx < mr) doc.line(cx, y, cx, y+rowH);
   });
   y += rowH + 20;
 
-  const sigW = (pw - 32) / 2;
-  const sigH = 44;
-  doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  const sigW = (pw - 32) / 2, sigH = 44;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
   doc.text('Employee Signature:', ml, y);
   doc.text('Chief Deputy Signature:', ml+sigW+32, y);
   y += 6;
@@ -562,7 +535,7 @@ async function buildPDF() {
   }
   doc.line(ml+sigW+32, y+sigH, ml+sigW+32+sigW, y+sigH);
 
-  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
   const depX = ml + sigW + 32;
   let depTextY = y + sigH + 10;
 
