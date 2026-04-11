@@ -33,12 +33,13 @@
   .sig-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.04em; }
   .sig-img-wrap { height: 80px; border-bottom: 1.5px solid #555; display: flex; align-items: flex-end; overflow: hidden; }
   .sig-img-wrap img { max-height: 76px; max-width: 100%; object-fit: contain; }
-  .sig-line { height: 80px; border-bottom: 1.5px solid #555; }
   .action-bar { display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
   .btn { padding: 11px 22px; font-size: 14px; border: 1px solid #bbb; border-radius: 8px; background: #f5f5f5; color: #111; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: Arial, sans-serif; white-space: nowrap; }
   .btn:hover { background: #e8e8e8; }
   .btn.delete { color: #c0392b; border-color: #e0a0a0; }
   .btn.delete:hover { background: #fff0f0; }
+  .btn.unapprove { color: #c0392b; border-color: #e0a0a0; display: none; }
+  .btn.unapprove:hover { background: #fff0f0; }
   .btn.approve { background: #1a7a3a; color: #fff; border-color: #1a7a3a; }
   .btn.approve:hover { background: #155e2e; }
   .btn.print { background: #1a5dc8; color: #fff; border-color: #1a5dc8; }
@@ -50,8 +51,6 @@
   .badge-pending { background: #fff8e0; color: #8a6000; border: 1px solid #e0c060; }
   .badge-approved { background: #eaf7ee; color: #1a6a30; border: 1px solid #a0d8b0; }
   .loading { text-align: center; padding: 60px; color: #888; }
-
-  /* Signature modal */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
   .modal-overlay.open { display: flex; }
   .modal { background: #fff; border-radius: 12px; padding: 28px; width: 100%; max-width: 480px; margin: 16px; }
@@ -145,6 +144,10 @@
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="width:16px;height:16px;"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 9h8l1-9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
         Delete
       </button>
+      <button class="btn unapprove" id="unapprove-btn" onclick="unapproveSheet()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="width:16px;height:16px;"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/></svg>
+        Unapprove
+      </button>
       <button class="btn" onclick="downloadPDF()">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="width:16px;height:16px;"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/><path d="M2 12h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
         Download PDF
@@ -166,13 +169,10 @@
   <div class="modal">
     <h3>Chief Deputy Signature Required</h3>
     <p>Please provide your signature to approve this timesheet. It will appear on the final printed document.</p>
-
     <div class="sig-toggle">
       <button class="active" id="toggle-draw" onclick="switchMode('draw')">Sign manually</button>
       <button id="toggle-upload" onclick="switchMode('upload')">Upload image</button>
     </div>
-
-    <!-- Draw pad -->
     <div id="draw-section">
       <div class="canvas-wrap" id="canvas-wrap">
         <canvas id="sig-canvas"></canvas>
@@ -182,8 +182,6 @@
         <button class="sig-small-btn" onclick="clearCanvas()">Clear</button>
       </div>
     </div>
-
-    <!-- Upload section -->
     <div id="upload-section" style="display:none;">
       <div class="upload-box" id="upload-box">
         <input type="file" accept="image/*" id="sig-file" onchange="handleUpload(event)">
@@ -194,10 +192,9 @@
         <button class="sig-small-btn" onclick="clearUpload()">Clear</button>
       </div>
     </div>
-
     <div class="modal-actions">
       <button class="modal-btn" onclick="closeSignModal()">Cancel</button>
-      <button class="modal-btn confirm" onclick="confirmApproval()">Confirm &amp; Approve</button>
+      <button class="modal-btn confirm" id="confirm-btn" onclick="confirmApproval()">Confirm &amp; Approve</button>
     </div>
   </div>
 </div>
@@ -265,55 +262,37 @@ function renderSheet(d) {
     b.textContent = `✓ Approved by ${d.approved_by_name || 'supervisor'} on ${new Date(d.approved_at).toLocaleString()}`;
     b.style.display = 'block';
     document.getElementById('approve-btn').disabled = true;
-    document.getElementById('approve-btn').textContent = 'Already approved';
+    document.getElementById('approve-btn').textContent = '✓ Approved';
+    document.getElementById('unapprove-btn').style.display = 'flex';
   }
 }
 
-/* ── Canvas setup ── */
 function setupCanvas() {
   const canvas = document.getElementById('sig-canvas');
   const wrap   = document.getElementById('canvas-wrap');
   const hint   = document.getElementById('canvas-hint');
-
   function resize() {
     const dpr = window.devicePixelRatio || 1;
     const w = wrap.clientWidth;
-    canvas.width  = w * dpr;
-    canvas.height = 120 * dpr;
-    canvas.style.width  = w + 'px';
-    canvas.style.height = '120px';
+    canvas.width  = w * dpr; canvas.height = 120 * dpr;
+    canvas.style.width = w + 'px'; canvas.style.height = '120px';
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
     ctx.strokeStyle = '#111'; ctx.lineWidth = 2;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   }
-  resize();
-  window.addEventListener('resize', resize);
-
+  resize(); window.addEventListener('resize', resize);
   let drawing = false;
   function getPos(e) {
     const rect = canvas.getBoundingClientRect();
     const src = e.touches ? e.touches[0] : e;
     return { x: src.clientX - rect.left, y: src.clientY - rect.top };
   }
-  function start(e) {
-    e.preventDefault(); drawing = true;
-    hint.style.display = 'none';
-    const ctx = canvas.getContext('2d');
-    const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y);
-  }
-  function move(e) {
-    if (!drawing) return; e.preventDefault();
-    const ctx = canvas.getContext('2d');
-    const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(p.x, p.y);
-  }
+  function start(e) { e.preventDefault(); drawing = true; hint.style.display = 'none'; const ctx = canvas.getContext('2d'); const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
+  function move(e) { if (!drawing) return; e.preventDefault(); const ctx = canvas.getContext('2d'); const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
   function end() { drawing = false; }
-
-  canvas.addEventListener('mousedown', start);
-  canvas.addEventListener('mousemove', move);
-  canvas.addEventListener('mouseup', end);
-  canvas.addEventListener('mouseleave', end);
+  canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move);
+  canvas.addEventListener('mouseup', end); canvas.addEventListener('mouseleave', end);
   canvas.addEventListener('touchstart', start, { passive: false });
   canvas.addEventListener('touchmove', move, { passive: false });
   canvas.addEventListener('touchend', end);
@@ -355,9 +334,7 @@ function clearUpload() {
 }
 
 function openSignModal() {
-  clearCanvas();
-  clearUpload();
-  switchMode('draw');
+  clearCanvas(); clearUpload(); switchMode('draw');
   document.getElementById('sig-modal').classList.add('open');
 }
 
@@ -366,15 +343,12 @@ function closeSignModal() {
 }
 
 async function confirmApproval() {
-  let sigData = null;
-  if (sigMode === 'draw') {
-    sigData = document.getElementById('sig-canvas').toDataURL('image/png');
-  } else {
-    sigData = uploadedSig;
-  }
+  let sigData = sigMode === 'draw'
+    ? document.getElementById('sig-canvas').toDataURL('image/png')
+    : uploadedSig;
   if (!sigData) { alert('Please provide a signature before approving.'); return; }
 
-  const confirmBtn = document.querySelector('.modal-btn.confirm');
+  const confirmBtn = document.getElementById('confirm-btn');
   confirmBtn.disabled = true; confirmBtn.textContent = 'Approving…';
 
   try {
@@ -409,15 +383,61 @@ async function confirmApproval() {
     b.textContent = `✓ Approved by ${supervisorName} on ${new Date().toLocaleString()}`;
     b.style.display = 'block';
 
-    const approveBtn = document.getElementById('approve-btn');
-    approveBtn.textContent = '✓ Approved';
-    approveBtn.disabled = true;
+    document.getElementById('approve-btn').textContent = '✓ Approved';
+    document.getElementById('approve-btn').disabled = true;
+    document.getElementById('unapprove-btn').style.display = 'flex';
+
+    document.getElementById('sheet-title').innerHTML = `${sheetData.employee_name} — ${sheetData.month} ${sheetData.year} <span class="badge badge-approved">Approved</span>`;
 
     closeSignModal();
+    confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & Approve';
 
   } catch(err) {
     confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & Approve';
     alert('Approval failed: ' + err.message);
+  }
+}
+
+async function unapproveSheet() {
+  if (!confirm('Are you sure you want to unapprove this timesheet? It will be returned to pending status and the signature will be removed.')) return;
+  try {
+    const res = await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${sheetData.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SERVICE_KEY,
+        'Authorization': 'Bearer ' + SERVICE_KEY,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        status:            'pending',
+        approved_at:       null,
+        approved_by_name:  null,
+        approved_by_email: null,
+        dep_signature:     null
+      })
+    });
+    if (!res.ok) throw new Error('Unapprove failed — status ' + res.status);
+
+    sheetData.status = 'pending';
+    sheetData.dep_signature = null;
+    sheetData.approved_by_name = null;
+    sheetData.approved_at = null;
+
+    document.getElementById('status-banner').style.display = 'none';
+    document.getElementById('approve-btn').disabled = false;
+    document.getElementById('approve-btn').innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="width:16px;height:16px;"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Approve timesheet';
+    document.getElementById('unapprove-btn').style.display = 'none';
+
+    const depImg = document.getElementById('dep-sig');
+    depImg.src = ''; depImg.style.display = 'none';
+    document.getElementById('dep-sig-placeholder').style.display = 'block';
+
+    document.getElementById('sheet-title').innerHTML = `${sheetData.employee_name} — ${sheetData.month} ${sheetData.year} <span class="badge badge-pending">Pending</span>`;
+
+    alert('Timesheet returned to pending status.');
+  } catch(err) {
+    alert('Unapprove failed: ' + err.message);
   }
 }
 
@@ -429,7 +449,7 @@ async function deleteSheet() {
       headers: { 'apikey': SERVICE_KEY, 'Authorization': 'Bearer ' + SERVICE_KEY }
     });
     if (!res.ok) throw new Error('Delete failed — status ' + res.status);
-    alert(`Timesheet deleted. The employee will need to resubmit.`);
+    alert('Timesheet deleted. The employee will need to resubmit.');
     window.location.href = '/dashboard.html';
   } catch(err) {
     alert('Delete failed: ' + err.message);
@@ -473,7 +493,6 @@ function buildPDF() {
   y += hdrH;
 
   doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
-
   const allRows = [];
   for (let day = 1; day <= 31; day++) {
     const found = (d.rows||[]).find(r => parseInt(r.day) === day);
