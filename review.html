@@ -167,7 +167,7 @@
   </div>
 </div>
 
-<!-- Signature Modal (Chief Deputy only) -->
+<!-- Signature Modal -->
 <div class="modal-overlay" id="sig-modal">
   <div class="modal">
     <h3>Chief Deputy Signature Required</h3>
@@ -219,10 +219,8 @@ async function init() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { window.location.href = '/supervisor.html'; return; }
   if (!id) { window.location.href = '/dashboard.html'; return; }
-
   const { data: profile } = await sb.from('supervisors').select('*').eq('id', session.user.id).single();
   currentSupervisor = profile;
-
   const { data, error } = await sb.from('timesheets').select('*').eq('id', id).single();
   if (error || !data) { document.getElementById('loading').textContent = 'Timesheet not found.'; return; }
   sheetData = data;
@@ -269,7 +267,6 @@ function renderSheet(d) {
     img.src = d.dep_signature; img.style.display = 'block';
     document.getElementById('dep-sig-placeholder').style.display = 'none';
   }
-
   if (d.reviewed_by_name) {
     const b = document.getElementById('banner-reviewed');
     b.textContent = `✓ Initial review completed by ${d.reviewed_by_name} on ${new Date(d.reviewed_at).toLocaleString()}`;
@@ -307,32 +304,19 @@ async function submitInitialReview() {
     const now = new Date().toISOString();
     const res = await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${sheetData.id}`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SERVICE_KEY,
-        'Authorization': 'Bearer ' + SERVICE_KEY,
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify({
-        status:           'reviewed',
-        reviewed_by_name: currentSupervisor.name,
-        reviewed_at:      now
-      })
+      headers: { 'Content-Type': 'application/json', 'apikey': SERVICE_KEY, 'Authorization': 'Bearer ' + SERVICE_KEY, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ status: 'reviewed', reviewed_by_name: currentSupervisor.name, reviewed_at: now })
     });
     if (!res.ok) throw new Error('Failed — status ' + res.status);
-
     sheetData.status = 'reviewed';
     sheetData.reviewed_by_name = currentSupervisor.name;
     sheetData.reviewed_at = now;
-
     const b = document.getElementById('banner-reviewed');
     b.textContent = `✓ Initial review completed by ${currentSupervisor.name} on ${new Date(now).toLocaleString()}`;
     b.style.display = 'block';
-
     document.getElementById('approve-btn-label').textContent = '✓ Review Complete';
     document.getElementById('unapprove-btn').style.display = 'flex';
     document.getElementById('sheet-title').innerHTML = `${sheetData.employee_name} — ${sheetData.month} ${sheetData.year} ${getBadge('reviewed')}`;
-
   } catch(err) {
     btn.disabled = false;
     document.getElementById('approve-btn-label').textContent = 'Approve timesheet';
@@ -356,11 +340,7 @@ function setupCanvas() {
   }
   resize(); window.addEventListener('resize', resize);
   let drawing = false;
-  function getPos(e) {
-    const rect = canvas.getBoundingClientRect();
-    const src = e.touches ? e.touches[0] : e;
-    return { x: src.clientX - rect.left, y: src.clientY - rect.top };
-  }
+  function getPos(e) { const rect = canvas.getBoundingClientRect(); const src = e.touches ? e.touches[0] : e; return { x: src.clientX - rect.left, y: src.clientY - rect.top }; }
   function start(e) { e.preventDefault(); drawing = true; hint.style.display = 'none'; const ctx = canvas.getContext('2d'); const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
   function move(e) { if (!drawing) return; e.preventDefault(); const ctx = canvas.getContext('2d'); const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
   function end() { drawing = false; }
@@ -400,65 +380,44 @@ function handleUpload(e) {
 
 function clearUpload() {
   uploadedSig = null;
-  const img = document.getElementById('upload-preview');
-  img.src = ''; img.style.display = 'none';
+  document.getElementById('upload-preview').src = '';
+  document.getElementById('upload-preview').style.display = 'none';
   document.getElementById('upload-placeholder').style.display = 'block';
   document.getElementById('sig-file').value = '';
 }
 
-function openSignModal() {
-  clearCanvas(); clearUpload(); switchMode('draw');
-  document.getElementById('sig-modal').classList.add('open');
-}
-
-function closeSignModal() {
-  document.getElementById('sig-modal').classList.remove('open');
-}
+function openSignModal() { clearCanvas(); clearUpload(); switchMode('draw'); document.getElementById('sig-modal').classList.add('open'); }
+function closeSignModal() { document.getElementById('sig-modal').classList.remove('open'); }
 
 async function confirmFinalApproval() {
-  let sigData = sigMode === 'draw'
-    ? document.getElementById('sig-canvas').toDataURL('image/png')
-    : uploadedSig;
+  let sigData = sigMode === 'draw' ? document.getElementById('sig-canvas').toDataURL('image/png') : uploadedSig;
   if (!sigData) { alert('Please provide a signature before approving.'); return; }
-
   const confirmBtn = document.getElementById('confirm-btn');
   confirmBtn.disabled = true; confirmBtn.textContent = 'Approving…';
-
   try {
     const res = await fetch('/.netlify/functions/approve-timesheet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: sheetData.id,
-        supervisor_name: currentSupervisor.name,
-        supervisor_email: currentSupervisor.email,
-        dep_signature: sigData
-      })
+      body: JSON.stringify({ id: sheetData.id, supervisor_name: currentSupervisor.name, supervisor_email: currentSupervisor.email, dep_signature: sigData })
     });
     const json = await res.json();
     if (!json.success) throw new Error(json.error || 'Failed');
-
     sheetData.status = 'approved';
     sheetData.approved_by_name = currentSupervisor.name;
     sheetData.approved_at = new Date().toISOString();
     sheetData.dep_signature = sigData;
-
     const depImg = document.getElementById('dep-sig');
     depImg.src = sigData; depImg.style.display = 'block';
     document.getElementById('dep-sig-placeholder').style.display = 'none';
-
     const b = document.getElementById('banner-approved');
     b.textContent = `✓ Approved by ${currentSupervisor.name} on ${new Date().toLocaleString()}`;
     b.style.display = 'block';
-
     document.getElementById('approve-btn-label').textContent = '✓ Approved';
     document.getElementById('approve-btn').disabled = true;
     document.getElementById('unapprove-btn').style.display = 'flex';
     document.getElementById('sheet-title').innerHTML = `${sheetData.employee_name} — ${sheetData.month} ${sheetData.year} ${getBadge('approved')}`;
-
     closeSignModal();
     confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & Approve';
-
   } catch(err) {
     confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & Approve';
     alert('Approval failed: ' + err.message);
@@ -468,30 +427,23 @@ async function confirmFinalApproval() {
 async function unapproveSheet() {
   if (!confirm('Are you sure you want to undo this? The timesheet will be returned to pending status.')) return;
   try {
-    const updateData = { status: 'pending', approved_at: null, approved_by_name: null, approved_by_email: null, dep_signature: null, reviewed_by_name: null, reviewed_at: null };
     const res = await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${sheetData.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'apikey': SERVICE_KEY, 'Authorization': 'Bearer ' + SERVICE_KEY, 'Prefer': 'return=minimal' },
-      body: JSON.stringify(updateData)
+      body: JSON.stringify({ status: 'pending', approved_at: null, approved_by_name: null, approved_by_email: null, dep_signature: null, reviewed_by_name: null, reviewed_at: null })
     });
     if (!res.ok) throw new Error('Failed — status ' + res.status);
-
-    sheetData.status = 'pending';
-    sheetData.dep_signature = null;
-    sheetData.approved_by_name = null;
-    sheetData.reviewed_by_name = null;
-
+    sheetData.status = 'pending'; sheetData.dep_signature = null;
+    sheetData.approved_by_name = null; sheetData.reviewed_by_name = null;
     document.getElementById('banner-reviewed').style.display = 'none';
     document.getElementById('banner-approved').style.display = 'none';
     document.getElementById('approve-btn').disabled = false;
     document.getElementById('approve-btn').innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="width:16px;height:16px;"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> <span id="approve-btn-label">Approve timesheet</span>';
     document.getElementById('unapprove-btn').style.display = 'none';
-
     const depImg = document.getElementById('dep-sig');
     depImg.src = ''; depImg.style.display = 'none';
     document.getElementById('dep-sig-placeholder').style.display = 'block';
     document.getElementById('sheet-title').innerHTML = `${sheetData.employee_name} — ${sheetData.month} ${sheetData.year} ${getBadge('pending')}`;
-
     alert('Timesheet returned to pending status.');
   } catch(err) { alert('Failed: ' + err.message); }
 }
@@ -610,18 +562,23 @@ async function buildPDF() {
   }
   doc.line(ml+sigW+32, y+sigH, ml+sigW+32+sigW, y+sigH);
 
-  y += sigH + 12;
   doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  const depX = ml + sigW + 32;
+  let depTextY = y + sigH + 10;
 
   if (d.reviewed_by_name) {
     doc.setTextColor(30, 80, 160);
-    doc.text(`Initial review completed by ${d.reviewed_by_name} on ${new Date(d.reviewed_at).toLocaleString()}`, ml, y);
-    y += 12;
+    doc.text(`Initial review completed by ${d.reviewed_by_name}`, depX, depTextY);
+    depTextY += 10;
+    doc.text(`on ${new Date(d.reviewed_at).toLocaleString()}`, depX, depTextY);
+    depTextY += 12;
   }
   if (d.status === 'approved' && d.approved_by_name) {
     doc.setTextColor(30, 122, 60);
     doc.setFont('helvetica','italic');
-    doc.text(`Approved by ${d.approved_by_name} on ${new Date(d.approved_at).toLocaleString()}`, ml, y);
+    doc.text(`Approved by ${d.approved_by_name}`, depX, depTextY);
+    depTextY += 10;
+    doc.text(`on ${new Date(d.approved_at).toLocaleString()}`, depX, depTextY);
   }
   doc.setTextColor(0,0,0);
 
