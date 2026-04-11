@@ -183,7 +183,7 @@
       </div>
     </div>
     <div id="upload-section" style="display:none;">
-      <div class="upload-box" id="upload-box">
+      <div class="upload-box">
         <input type="file" accept="image/*" id="sig-file" onchange="handleUpload(event)">
         <img id="upload-preview" src="">
         <span class="upload-placeholder" id="upload-placeholder">Tap to choose a signature image</span>
@@ -204,7 +204,6 @@ const sb = supabase.createClient(
   'https://kwgfonwgeoievgxwvxlg.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3Z2ZvbndnZW9pZXZneHd2eGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4Mzk4MDQsImV4cCI6MjA5MTQxNTgwNH0.KrH-loytrritpSgy6MVBmT0KyyodDp27ZLSATm1dGsM'
 );
-
 const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3Z2ZvbndnZW9pZXZneHd2eGxnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTgzOTgwNCwiZXhwIjoyMDkxNDE1ODA0fQ.yzHKNyoZ85hj2xxjW_byLStr-O9FOCPna9OVXvzthWI';
 
 let sheetData = null;
@@ -233,20 +232,17 @@ function renderSheet(d) {
   document.getElementById('m-month').textContent = d.month;
   document.getElementById('m-year').textContent = d.year;
   document.getElementById('m-submitted').textContent = new Date(d.submitted_at).toLocaleString();
-
   const rows = d.rows || [];
   document.getElementById('rows-body').innerHTML = rows.map(r => `<tr>
     <td>${r.day}</td><td>${r.start||''}</td><td>${r.end||''}</td>
     <td>${r.total||''}</td><td>${r.comp||''}</td><td>${r.sick||''}</td><td>${r.notes||''}</td>
   </tr>`).join('');
-
   document.getElementById('f-total').textContent = d.total_hours;
   document.getElementById('f-comp').textContent  = d.comp_hours;
   document.getElementById('f-sick').textContent  = d.sick_hours;
   document.getElementById('bar-total').textContent = d.total_hours;
   document.getElementById('bar-comp').textContent  = d.comp_hours;
   document.getElementById('bar-sick').textContent  = d.sick_hours;
-
   if (d.emp_signature) {
     const img = document.getElementById('emp-sig');
     img.src = d.emp_signature; img.style.display = 'block';
@@ -274,7 +270,7 @@ function setupCanvas() {
   function resize() {
     const dpr = window.devicePixelRatio || 1;
     const w = wrap.clientWidth;
-    canvas.width  = w * dpr; canvas.height = 120 * dpr;
+    canvas.width = w * dpr; canvas.height = 120 * dpr;
     canvas.style.width = w + 'px'; canvas.style.height = '120px';
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
@@ -342,56 +338,56 @@ function closeSignModal() {
   document.getElementById('sig-modal').classList.remove('open');
 }
 
+function getSigDimensions(src, maxW, maxH) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const ratio = img.naturalHeight / img.naturalWidth;
+      let w = Math.min(img.naturalWidth, maxW);
+      let h = w * ratio;
+      if (h > maxH) { h = maxH; w = h / ratio; }
+      resolve({ w, h });
+    };
+    img.onerror = () => resolve({ w: maxW * 0.6, h: maxH * 0.6 });
+    img.src = src;
+  });
+}
+
 async function confirmApproval() {
   let sigData = sigMode === 'draw'
     ? document.getElementById('sig-canvas').toDataURL('image/png')
     : uploadedSig;
   if (!sigData) { alert('Please provide a signature before approving.'); return; }
-
   const confirmBtn = document.getElementById('confirm-btn');
   confirmBtn.disabled = true; confirmBtn.textContent = 'Approving…';
-
   try {
     const { data: { session } } = await sb.auth.getSession();
     const { data: profile } = await sb.from('supervisors').select('name').eq('id', session.user.id).single();
     const supervisorName = profile?.name || session.user.email;
-
     const res = await fetch('/.netlify/functions/approve-timesheet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: sheetData.id,
-        supervisor_name: supervisorName,
-        supervisor_email: session.user.email,
-        dep_signature: sigData
-      })
+      body: JSON.stringify({ id: sheetData.id, supervisor_name: supervisorName, supervisor_email: session.user.email, dep_signature: sigData })
     });
     const json = await res.json();
     if (!json.success) throw new Error(json.error || 'Failed');
-
     sheetData.status = 'approved';
     sheetData.approved_by_name = supervisorName;
     sheetData.approved_at = new Date().toISOString();
     sheetData.dep_signature = sigData;
-
     const depImg = document.getElementById('dep-sig');
     depImg.src = sigData; depImg.style.display = 'block';
     document.getElementById('dep-sig-placeholder').style.display = 'none';
-
     const b = document.getElementById('status-banner');
     b.className = 'status-banner status-approved';
     b.textContent = `✓ Approved by ${supervisorName} on ${new Date().toLocaleString()}`;
     b.style.display = 'block';
-
     document.getElementById('approve-btn').textContent = '✓ Approved';
     document.getElementById('approve-btn').disabled = true;
     document.getElementById('unapprove-btn').style.display = 'flex';
-
     document.getElementById('sheet-title').innerHTML = `${sheetData.employee_name} — ${sheetData.month} ${sheetData.year} <span class="badge badge-approved">Approved</span>`;
-
     closeSignModal();
     confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & Approve';
-
   } catch(err) {
     confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & Approve';
     alert('Approval failed: ' + err.message);
@@ -403,42 +399,22 @@ async function unapproveSheet() {
   try {
     const res = await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${sheetData.id}`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SERVICE_KEY,
-        'Authorization': 'Bearer ' + SERVICE_KEY,
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify({
-        status:            'pending',
-        approved_at:       null,
-        approved_by_name:  null,
-        approved_by_email: null,
-        dep_signature:     null
-      })
+      headers: { 'Content-Type': 'application/json', 'apikey': SERVICE_KEY, 'Authorization': 'Bearer ' + SERVICE_KEY, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ status: 'pending', approved_at: null, approved_by_name: null, approved_by_email: null, dep_signature: null })
     });
     if (!res.ok) throw new Error('Unapprove failed — status ' + res.status);
-
-    sheetData.status = 'pending';
-    sheetData.dep_signature = null;
-    sheetData.approved_by_name = null;
-    sheetData.approved_at = null;
-
+    sheetData.status = 'pending'; sheetData.dep_signature = null;
+    sheetData.approved_by_name = null; sheetData.approved_at = null;
     document.getElementById('status-banner').style.display = 'none';
     document.getElementById('approve-btn').disabled = false;
     document.getElementById('approve-btn').innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="width:16px;height:16px;"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Approve timesheet';
     document.getElementById('unapprove-btn').style.display = 'none';
-
     const depImg = document.getElementById('dep-sig');
     depImg.src = ''; depImg.style.display = 'none';
     document.getElementById('dep-sig-placeholder').style.display = 'block';
-
     document.getElementById('sheet-title').innerHTML = `${sheetData.employee_name} — ${sheetData.month} ${sheetData.year} <span class="badge badge-pending">Pending</span>`;
-
     alert('Timesheet returned to pending status.');
-  } catch(err) {
-    alert('Unapprove failed: ' + err.message);
-  }
+  } catch(err) { alert('Unapprove failed: ' + err.message); }
 }
 
 async function deleteSheet() {
@@ -451,12 +427,10 @@ async function deleteSheet() {
     if (!res.ok) throw new Error('Delete failed — status ' + res.status);
     alert('Timesheet deleted. The employee will need to resubmit.');
     window.location.href = '/dashboard.html';
-  } catch(err) {
-    alert('Delete failed: ' + err.message);
-  }
+  } catch(err) { alert('Delete failed: ' + err.message); }
 }
 
-function buildPDF() {
+async function buildPDF() {
   const { jsPDF } = window.jspdf;
   const d = sheetData;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
@@ -503,8 +477,7 @@ function buildPDF() {
     doc.rect(ml, y, pw, rowH); cx = ml;
     cols.forEach((col, i) => {
       if (vals[i]) doc.text(String(vals[i]), cx+2, y+9);
-      cx += col.w;
-      if (cx < mr) doc.line(cx, y, cx, y+rowH);
+      cx += col.w; if (cx < mr) doc.line(cx, y, cx, y+rowH);
     });
     y += rowH;
   });
@@ -516,24 +489,30 @@ function buildPDF() {
   cx = ml + totW;
   [d.total_hours, d.comp_hours, d.sick_hours].forEach((val, i) => {
     if (val) doc.text(val, cx+2, y+9);
-    cx += cols[3+i].w;
-    if (cx < mr) doc.line(cx, y, cx, y+rowH);
+    cx += cols[3+i].w; if (cx < mr) doc.line(cx, y, cx, y+rowH);
   });
   y += rowH + 20;
 
   const sigW = (pw - 32) / 2;
+  const sigH = 44;
   doc.setFont('helvetica','bold'); doc.setFontSize(9);
   doc.text('Employee Signature:', ml, y);
   doc.text('Chief Deputy Signature:', ml+sigW+32, y);
-  y += 6; const sigH = 44;
+  y += 6;
 
   if (d.emp_signature && d.emp_signature.startsWith('data:image')) {
-    try { doc.addImage(d.emp_signature, 'PNG', ml, y, sigW, sigH-8); } catch(e) {}
+    try {
+      const dims = await getSigDimensions(d.emp_signature, sigW - 8, sigH - 8);
+      doc.addImage(d.emp_signature, 'PNG', ml + 4, y + (sigH - dims.h) / 2, dims.w, dims.h);
+    } catch(e) {}
   }
   doc.line(ml, y+sigH, ml+sigW, y+sigH);
 
   if (d.dep_signature && d.dep_signature.startsWith('data:image')) {
-    try { doc.addImage(d.dep_signature, 'PNG', ml+sigW+32, y, sigW, sigH-8); } catch(e) {}
+    try {
+      const dims = await getSigDimensions(d.dep_signature, sigW - 8, sigH - 8);
+      doc.addImage(d.dep_signature, 'PNG', ml + sigW + 36, y + (sigH - dims.h) / 2, dims.w, dims.h);
+    } catch(e) {}
   }
   doc.line(ml+sigW+32, y+sigH, ml+sigW+32+sigW, y+sigH);
 
@@ -547,13 +526,13 @@ function buildPDF() {
   return doc;
 }
 
-function downloadPDF() {
-  const doc = buildPDF();
+async function downloadPDF() {
+  const doc = await buildPDF();
   doc.save(`${sheetData.employee_name.replace(/\s+/g,'_')}_${sheetData.month}_${sheetData.year}_Timesheet.pdf`);
 }
 
-function printSheet() {
-  const doc = buildPDF();
+async function printSheet() {
+  const doc = await buildPDF();
   const blob = doc.output('blob');
   const url = URL.createObjectURL(blob);
   const win = window.open(url);
