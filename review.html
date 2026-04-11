@@ -44,7 +44,6 @@
   .btn:disabled { opacity: 0.5; cursor: default; }
   .status-banner { border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; }
   .status-approved { background: #eaf7ee; border: 1px solid #a0d8b0; color: #1a6a30; }
-  .status-pending { background: #fff8e0; border: 1px solid #e0c060; color: #8a6000; }
   .badge { display: inline-block; font-size: 12px; padding: 3px 12px; border-radius: 20px; font-weight: bold; margin-left: 8px; vertical-align: middle; }
   .badge-pending { background: #fff8e0; color: #8a6000; border: 1px solid #e0c060; }
   .badge-approved { background: #eaf7ee; color: #1a6a30; border: 1px solid #a0d8b0; }
@@ -160,17 +159,20 @@ function renderSheet(d) {
   document.getElementById('m-month').textContent = d.month;
   document.getElementById('m-year').textContent = d.year;
   document.getElementById('m-submitted').textContent = new Date(d.submitted_at).toLocaleString();
+
   const rows = d.rows || [];
   document.getElementById('rows-body').innerHTML = rows.map(r => `<tr>
     <td>${r.day}</td><td>${r.start||''}</td><td>${r.end||''}</td>
     <td>${r.total||''}</td><td>${r.comp||''}</td><td>${r.sick||''}</td><td>${r.notes||''}</td>
   </tr>`).join('');
+
   document.getElementById('f-total').textContent = d.total_hours;
   document.getElementById('f-comp').textContent  = d.comp_hours;
   document.getElementById('f-sick').textContent  = d.sick_hours;
   document.getElementById('bar-total').textContent = d.total_hours;
   document.getElementById('bar-comp').textContent  = d.comp_hours;
   document.getElementById('bar-sick').textContent  = d.sick_hours;
+
   if (d.emp_signature) {
     const img = document.getElementById('emp-sig');
     img.src = d.emp_signature; img.style.display = 'block';
@@ -205,6 +207,8 @@ async function approveSheet() {
     b.style.display = 'block';
     btn.textContent = '✓ Approved';
     sheetData.status = 'approved';
+    sheetData.approved_by_name = supervisorName;
+    sheetData.approved_at = new Date().toISOString();
   } catch(err) {
     btn.disabled = false; btn.textContent = 'Approve timesheet';
     alert('Approval failed: ' + err.message);
@@ -217,10 +221,12 @@ function buildPDF() {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
   const ml = 54, mr = 558, pw = mr - ml;
   let y = 54;
+
   doc.setFont('helvetica','bold'); doc.setFontSize(16);
   doc.text("Yalobusha County Sheriff's Department", ml, y); y += 18;
   doc.setFont('helvetica','normal'); doc.setFontSize(10);
   doc.text('Time and Attendance', ml, y); y += 24;
+
   const colW = pw / 2;
   [[['Name:', d.employee_name],['Last 4 of Social:', d.ssn_last4]],[['Employment Status:', d.employment_status]],[['Current Month:', d.month],['Current Year:', d.year]]].forEach(row => {
     row.forEach((item, i) => {
@@ -231,44 +237,73 @@ function buildPDF() {
       doc.line(x + lw, y + 1, x + colW - 6, y + 1);
     }); y += 16;
   }); y += 8;
-  const cols = [{label:'Day',w:28},{label:'Start',w:56},{label:'End',w:56},{label:'Total Hrs',w:58},{label:'Comp Hrs',w:58},{label:'Sick Hrs',w:58},{label:'Notes',w:pw-28-56-56-58-58-58}];
+
+  const cols = [
+    {label:'Day',w:28},{label:'Start',w:56},{label:'End',w:56},
+    {label:'Total Hrs',w:58},{label:'Comp Hrs',w:58},{label:'Sick Hrs',w:58},
+    {label:'Notes',w:pw-28-56-56-58-58-58}
+  ];
   const rowH = 16, hdrH = 20;
+
   doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setFillColor(240,240,240);
   doc.rect(ml, y, pw, hdrH, 'FD');
   let cx = ml;
   cols.forEach(col => { doc.text(col.label, cx+3, y+13); cx += col.w; if(cx<mr) doc.line(cx,y,cx,y+hdrH); });
   y += hdrH;
+
   doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
-  (d.rows||[]).forEach(row => {
-    const vals = [row.day,row.start,row.end,row.total,row.comp,row.sick,row.notes];
-    doc.rect(ml,y,pw,rowH); cx = ml;
-    cols.forEach((col,i) => { if(vals[i]) doc.text(String(vals[i]),cx+3,y+11); cx+=col.w; if(cx<mr) doc.line(cx,y,cx,y+rowH); });
+
+  const allRows = [];
+  for (let day = 1; day <= 31; day++) {
+    const found = (d.rows||[]).find(r => parseInt(r.day) === day);
+    allRows.push(found || { day: String(day), start:'', end:'', total:'', comp:'', sick:'', notes:'' });
+  }
+  allRows.forEach(row => {
+    const vals = [row.day, row.start, row.end, row.total, row.comp, row.sick, row.notes];
+    doc.rect(ml, y, pw, rowH); cx = ml;
+    cols.forEach((col, i) => {
+      if (vals[i]) doc.text(String(vals[i]), cx+3, y+11);
+      cx += col.w;
+      if (cx < mr) doc.line(cx, y, cx, y+rowH);
+    });
     y += rowH;
   });
+
   doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setFillColor(240,240,240);
-  doc.rect(ml,y,pw,rowH,'FD');
-  const totW = cols[0].w+cols[1].w+cols[2].w;
+  doc.rect(ml, y, pw, rowH, 'FD');
+  const totW = cols[0].w + cols[1].w + cols[2].w;
   doc.text('Total Hours:', ml+totW-doc.getTextWidth('Total Hours:')-4, y+11);
-  cx = ml+totW;
-  [d.total_hours,d.comp_hours,d.sick_hours].forEach((val,i) => { if(val) doc.text(val,cx+3,y+11); cx+=cols[3+i].w; if(cx<mr) doc.line(cx,y,cx,y+rowH); });
+  cx = ml + totW;
+  [d.total_hours, d.comp_hours, d.sick_hours].forEach((val, i) => {
+    if (val) doc.text(val, cx+3, y+11);
+    cx += cols[3+i].w;
+    if (cx < mr) doc.line(cx, y, cx, y+rowH);
+  });
   y += rowH + 28;
-  const sigW = (pw-32)/2;
+
+  const sigW = (pw - 32) / 2;
   doc.setFont('helvetica','bold'); doc.setFontSize(10);
-  doc.text('Employee Signature:', ml, y); doc.text('Chief Deputy Signature:', ml+sigW+32, y);
+  doc.text('Employee Signature:', ml, y);
+  doc.text('Chief Deputy Signature:', ml+sigW+32, y);
   y += 8; const sigH = 52;
+
   if (d.emp_signature && d.emp_signature.startsWith('data:image')) {
     try { doc.addImage(d.emp_signature, 'PNG', ml, y, sigW, sigH-10); } catch(e) {}
   }
   doc.line(ml, y+sigH, ml+sigW, y+sigH);
   doc.line(ml+sigW+32, y+sigH, ml+sigW+32+sigW, y+sigH);
-  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(130,130,130);
-  doc.text('Sign here', ml+sigW+34, y+sigH+9); doc.setTextColor(0,0,0);
-  if (d.status === 'approved') {
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+  doc.setTextColor(130,130,130);
+  doc.text('Sign here', ml+sigW+34, y+sigH+9);
+  doc.setTextColor(0,0,0);
+
+  if (d.status === 'approved' && d.approved_by_name) {
     y += sigH + 20;
     doc.setFont('helvetica','italic'); doc.setFontSize(9); doc.setTextColor(30,122,60);
-    doc.text(`Approved by ${d.approved_by_name||'supervisor'} on ${new Date(d.approved_at).toLocaleString()}`, ml, y);
+    doc.text(`Approved by ${d.approved_by_name} on ${new Date(d.approved_at).toLocaleString()}`, ml, y);
     doc.setTextColor(0,0,0);
   }
+
   return doc;
 }
 
