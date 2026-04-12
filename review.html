@@ -38,9 +38,7 @@
   .btn:hover { background: #e8e8e8; }
   .btn.delete { color: #c0392b; border-color: #e0a0a0; }
   .btn.delete:hover { background: #fff0f0; }
-  .btn.unvalidate { color: #c0392b; border-color: #e0a0a0; display: none; }
-  .btn.unvalidate:hover { background: #fff0f0; }
-  .btn.unapprove { color: #c0392b; border-color: #e0a0a0; display: none; }
+  .btn.unapprove { color: #c0392b; border-color: #e0a0a0; }
   .btn.unapprove:hover { background: #fff0f0; }
   .btn.validate { background: #1a5dc8; color: #fff; border-color: #1a5dc8; }
   .btn.validate:hover { background: #154fa8; }
@@ -222,6 +220,7 @@ function buildActionBar() {
   const d = sheetData;
   const role = currentSupervisor?.role;
 
+  // Delete button always shown for everyone
   const deleteBtn = `<button class="btn delete" onclick="deleteSheet()">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="width:16px;height:16px;"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 9h8l1-9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
     Delete
@@ -244,13 +243,15 @@ function buildActionBar() {
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="width:16px;height:16px;"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
           Validate timesheet
         </button>`;
-    } else {
-      bar.innerHTML = downloadBtn + printBtn + `
-        <button class="btn unapprove" id="unvalidate-btn" style="display:flex;" onclick="unvalidateSheet()">
+    } else if (d.status === 'reviewed') {
+      bar.innerHTML = deleteBtn + downloadBtn + printBtn + `
+        <button class="btn unapprove" style="display:flex;" onclick="unvalidateSheet()">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="width:16px;height:16px;"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/></svg>
           Unvalidate
         </button>
         <button class="btn validate" disabled>&#10003; Validated</button>`;
+    } else if (d.status === 'approved') {
+      bar.innerHTML = deleteBtn + downloadBtn + printBtn;
     }
   } else {
     if (d.status === 'reviewed') {
@@ -260,8 +261,8 @@ function buildActionBar() {
           Final Approval
         </button>`;
     } else if (d.status === 'approved') {
-      bar.innerHTML = downloadBtn + printBtn + `
-        <button class="btn unapprove" id="unapprove-btn" style="display:flex;" onclick="unapproveSheet()">
+      bar.innerHTML = deleteBtn + downloadBtn + printBtn + `
+        <button class="btn unapprove" style="display:flex;" onclick="unapproveSheet()">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="width:16px;height:16px;"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/></svg>
           Unapprove
         </button>
