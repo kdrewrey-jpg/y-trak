@@ -53,16 +53,12 @@
 
 <div class="container">
   <div class="stats">
-    <div class="stat"><p class="stat-num" id="stat-pending">—</p><p class="stat-label" id="stat-pending-label">Pending review</p></div>
-    <div class="stat"><p class="stat-num" id="stat-approved">—</p><p class="stat-label">Approved this month</p></div>
+    <div class="stat"><p class="stat-num" id="stat-pending">—</p><p class="stat-label" id="stat-pending-label">Pending</p></div>
+    <div class="stat"><p class="stat-num" id="stat-second">—</p><p class="stat-label" id="stat-second-label">—</p></div>
     <div class="stat"><p class="stat-num" id="stat-total">—</p><p class="stat-label">Total submissions</p></div>
   </div>
 
-  <div class="tabs">
-    <button class="tab active" id="tab-pending" onclick="showTab('pending')">Pending</button>
-    <button class="tab" id="tab-approved" onclick="showTab('approved')">Approved</button>
-    <button class="tab" id="tab-all" onclick="showTab('all')">All Timesheets</button>
-  </div>
+  <div class="tabs" id="tab-bar"></div>
 
   <div class="card">
     <div id="loading" class="loading">Loading timesheets…</div>
@@ -99,11 +95,25 @@ async function init() {
   currentSupervisor = profile;
   document.getElementById('user-name').textContent = profile?.name || session.user.email;
 
-  if (profile?.role === 'final') {
-    document.getElementById('stat-pending-label').textContent = 'Awaiting final approval';
-  }
-
+  buildTabs();
   await loadSheets();
+}
+
+function buildTabs() {
+  const tabBar = document.getElementById('tab-bar');
+  if (currentSupervisor?.role === 'reviewer') {
+    tabBar.innerHTML = `
+      <button class="tab active" id="tab-pending"  onclick="showTab('pending')">Pending</button>
+      <button class="tab"        id="tab-reviewed" onclick="showTab('reviewed')">Validated</button>`;
+    document.getElementById('stat-second-label').textContent = 'Validated';
+  } else {
+    tabBar.innerHTML = `
+      <button class="tab active" id="tab-pending"  onclick="showTab('pending')">Pending Approval</button>
+      <button class="tab"        id="tab-approved" onclick="showTab('approved')">Approved</button>
+      <button class="tab"        id="tab-all"      onclick="showTab('all')">All Timesheets</button>`;
+    document.getElementById('stat-pending-label').textContent = 'Awaiting approval';
+    document.getElementById('stat-second-label').textContent  = 'Approved this month';
+  }
 }
 
 async function loadSheets() {
@@ -116,17 +126,14 @@ async function loadSheets() {
 
   allSheets = data || [];
   const thisMonth = new Date().toLocaleString('default', { month: 'long' });
-  const approvedMonth = allSheets.filter(s => s.status === 'approved' && s.month === thisMonth).length;
 
-  let pendingCount = 0;
-  if (currentSupervisor?.role === 'final') {
-    pendingCount = allSheets.filter(s => s.status === 'pending' || s.status === 'reviewed').length;
+  if (currentSupervisor?.role === 'reviewer') {
+    document.getElementById('stat-pending').textContent = allSheets.filter(s => s.status === 'pending').length;
+    document.getElementById('stat-second').textContent  = allSheets.filter(s => s.status === 'reviewed').length;
   } else {
-    pendingCount = allSheets.filter(s => s.status === 'pending').length;
+    document.getElementById('stat-pending').textContent = allSheets.filter(s => s.status === 'reviewed').length;
+    document.getElementById('stat-second').textContent  = allSheets.filter(s => s.status === 'approved' && s.month === thisMonth).length;
   }
-
-  document.getElementById('stat-pending').textContent = pendingCount;
-  document.getElementById('stat-approved').textContent = approvedMonth;
   document.getElementById('stat-total').textContent = allSheets.length;
 
   renderTab(currentTab);
@@ -134,22 +141,24 @@ async function loadSheets() {
 
 function getBadge(status) {
   if (status === 'approved') return '<span class="badge badge-approved">Approved</span>';
-  if (status === 'reviewed') return '<span class="badge badge-reviewed">Initial Review Complete</span>';
+  if (status === 'reviewed') return '<span class="badge badge-reviewed">Validated</span>';
   return '<span class="badge badge-pending">Pending</span>';
 }
 
 function renderTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('tab-' + tab).classList.add('active');
+  const activeTab = document.getElementById('tab-' + tab);
+  if (activeTab) activeTab.classList.add('active');
 
   let rows = allSheets;
-  if (tab === 'pending') {
-    rows = currentSupervisor?.role === 'final'
-      ? allSheets.filter(s => s.status === 'pending' || s.status === 'reviewed')
-      : allSheets.filter(s => s.status === 'pending');
-  } else if (tab === 'approved') {
-    rows = allSheets.filter(s => s.status === 'approved');
+
+  if (currentSupervisor?.role === 'reviewer') {
+    if (tab === 'pending')  rows = allSheets.filter(s => s.status === 'pending');
+    if (tab === 'reviewed') rows = allSheets.filter(s => s.status === 'reviewed');
+  } else {
+    if (tab === 'pending')  rows = allSheets.filter(s => s.status === 'reviewed');
+    if (tab === 'approved') rows = allSheets.filter(s => s.status === 'approved');
   }
 
   document.getElementById('loading').style.display = 'none';
@@ -157,7 +166,7 @@ function renderTab(tab) {
   if (rows.length === 0) {
     document.getElementById('sheet-table').style.display = 'none';
     document.getElementById('sheet-empty').style.display = 'block';
-    document.getElementById('sheet-empty').textContent = tab === 'pending' ? 'No timesheets pending.' : 'No timesheets found.';
+    document.getElementById('sheet-empty').textContent = 'No timesheets found.';
     return;
   }
 
@@ -170,7 +179,7 @@ function renderTab(tab) {
       <td>${s.total_hours}</td>
       <td>${date}</td>
       <td>${getBadge(s.status)}</td>
-      <td><button class="review-btn" onclick="window.location.href='/review.html?id=${s.id}'">Review</button></td>
+      <td><button class="review-btn" onclick="window.location.href='/review.html?id=${s.id}'">${currentSupervisor?.role === 'reviewer' ? 'Review' : 'Review'}</button></td>
     </tr>`;
   }).join('');
 
