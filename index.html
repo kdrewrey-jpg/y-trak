@@ -55,12 +55,10 @@
   .metric { background: #f5f5f5; border-radius: 8px; padding: 10px 12px; }
   .metric-label { font-size: 11px; color: #666; margin: 0 0 3px; }
   .metric-value { font-size: 20px; font-weight: bold; margin: 0; color: #111; }
-  .sig-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-  @media (max-width: 600px) { .sig-row { grid-template-columns: 1fr; } }
-  .sig-block { display: flex; flex-direction: column; gap: 8px; }
+  .sig-block { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; max-width: 420px; }
   .sig-block-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
   .sig-toggle { display: flex; border: 1px solid #ccc; border-radius: 7px; overflow: hidden; width: 100%; }
-  .sig-toggle button { flex: 1; padding: 7px 6px; font-size: 12px; border: none; background: #f7f7f7; color: #555; cursor: pointer; font-family: Arial, sans-serif; transition: background 0.15s, color 0.15s; }
+  .sig-toggle button { flex: 1; padding: 7px 6px; font-size: 12px; border: none; background: #f7f7f7; color: #555; cursor: pointer; font-family: Arial, sans-serif; }
   .sig-toggle button.active { background: #1a5dc8; color: #fff; font-weight: bold; }
   .sig-toggle button:first-child { border-right: 1px solid #ccc; }
   .sig-draw-wrap { display: flex; flex-direction: column; gap: 6px; }
@@ -177,43 +175,35 @@
     <div class="metric"><p class="metric-label">Sick hours</p><p class="metric-value" id="bar-sick">0.00</p></div>
   </div>
 
-  <div class="sig-row" style="align-items: flex-end;">
-    <div class="sig-block" id="sig-emp">
-      <span class="sig-block-label">Employee signature</span>
-      <div class="sig-toggle">
-        <button class="active" onclick="setSigMode('emp','draw')">Sign manually</button>
-        <button onclick="setSigMode('emp','upload')">Insert image</button>
-      </div>
-      <div class="sig-draw-wrap" id="emp-draw">
-        <div id="emp-canvas-outer" style="background: transparent; overflow: hidden; touch-action: none; position: relative;">
-          <canvas id="emp-canvas" style="display:block;width:100%;height:80px;cursor:crosshair;"></canvas>
-          <span class="sig-hint" id="emp-hint">Sign here with your finger or mouse</span>
-        </div>
-        <div style="border-bottom: 1.5px solid #555; width: 100%; margin: 0 0 4px;"></div>
-        <div class="sig-draw-actions">
-          <button class="sig-btn clear-btn" onclick="clearDraw('emp')">Clear</button>
-          <button class="sig-btn save" onclick="saveDraw('emp')">Save</button>
-        </div>
-        <span class="sig-saved-badge" id="emp-draw-saved">&#10003; Signature saved</span>
-      </div>
-      <div class="sig-upload-wrap" id="emp-upload">
-        <div style="height: 80px; display: flex; align-items: flex-end; overflow: hidden; background: transparent;">
-          <div style="position: relative; width: 100%; height: 100%;">
-            <input type="file" accept="image/*" id="emp-file" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;">
-            <img id="emp-upload-img" style="max-height:76px;max-width:100%;object-fit:contain;display:none;position:absolute;bottom:0;left:0;">
-            <span class="sig-upload-placeholder" id="emp-upload-ph" style="position:absolute;bottom:20px;left:0;right:0;text-align:center;font-size:12px;color:#999;pointer-events:none;">Tap to choose an image or drag and drop</span>
-          </div>
-        </div>
-        <div style="border-bottom: 1.5px solid #555; width: 100%; margin: 0 0 4px;"></div>
-        <span class="sig-upload-clear" id="emp-upload-clear" onclick="clearUpload('emp')">Remove image</span>
-      </div>
+  <!-- Employee signature only — Chief Deputy signature hidden from employee view -->
+  <div class="sig-block" id="sig-emp">
+    <span class="sig-block-label">Employee signature</span>
+    <div class="sig-toggle">
+      <button class="active" onclick="setSigMode('emp','draw')">Sign manually</button>
+      <button onclick="setSigMode('emp','upload')">Insert image</button>
     </div>
-
-    <div class="sig-block" id="sig-dep">
-      <span class="sig-block-label">Chief Deputy signature</span>
-      <div style="height: 80px;"></div>
+    <div class="sig-draw-wrap" id="emp-draw">
+      <div id="emp-canvas-outer" style="background: transparent; overflow: hidden; touch-action: none; position: relative;">
+        <canvas id="emp-canvas" style="display:block;width:100%;height:80px;cursor:crosshair;"></canvas>
+        <span class="sig-hint" id="emp-hint">Sign here with your finger or mouse</span>
+      </div>
       <div style="border-bottom: 1.5px solid #555; width: 100%; margin: 0 0 4px;"></div>
-      <span style="font-size: 11px; color: #888;">To be signed after printing</span>
+      <div class="sig-draw-actions">
+        <button class="sig-btn clear-btn" onclick="clearDraw('emp')">Clear</button>
+        <button class="sig-btn save" onclick="saveDraw('emp')">Save</button>
+      </div>
+      <span class="sig-saved-badge" id="emp-draw-saved">&#10003; Signature saved</span>
+    </div>
+    <div class="sig-upload-wrap" id="emp-upload">
+      <div style="height: 80px; display: flex; align-items: flex-end; overflow: hidden; background: transparent;">
+        <div style="position: relative; width: 100%; height: 100%;">
+          <input type="file" accept="image/*" id="emp-file" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;">
+          <img id="emp-upload-img" style="max-height:76px;max-width:100%;object-fit:contain;display:none;position:absolute;bottom:0;left:0;">
+          <span class="sig-upload-placeholder" id="emp-upload-ph" style="position:absolute;bottom:20px;left:0;right:0;text-align:center;font-size:12px;color:#999;pointer-events:none;">Tap to choose an image or drag and drop</span>
+        </div>
+      </div>
+      <div style="border-bottom: 1.5px solid #555; width: 100%; margin: 0 0 4px;"></div>
+      <span class="sig-upload-clear" id="emp-upload-clear" onclick="clearUpload('emp')">Remove image</span>
     </div>
   </div>
 
@@ -246,9 +236,8 @@
 </div>
 
 <script>
-/* ── PIN check ── */
+/* ── PIN ── */
 const CORRECT_PIN = '38965';
-
 function checkPin() {
   const val = document.getElementById('pin-input').value.trim();
   const err = document.getElementById('pin-error');
@@ -262,44 +251,35 @@ function checkPin() {
     document.getElementById('pin-input').focus();
   }
 }
-
 if (sessionStorage.getItem('ytrak-auth') === '1') {
   document.getElementById('pin-screen').style.display = 'none';
   document.getElementById('timesheet-screen').style.display = 'block';
 }
 
-/* ── Time parsing with auto-format ── */
+/* ── Time ── */
 function parseTime(v) {
   if (!v) return null;
   v = v.trim();
   let h, min;
-  if (/^\d{1,2}:\d{2}$/.test(v)) {
-    const parts = v.split(':');
-    h = parseInt(parts[0]); min = parseInt(parts[1]);
-  } else if (/^\d{3,4}$/.test(v)) {
-    if (v.length === 3) { h = parseInt(v[0]); min = parseInt(v.slice(1)); }
-    else { h = parseInt(v.slice(0,2)); min = parseInt(v.slice(2)); }
-  } else { return null; }
+  if (/^\d{1,2}:\d{2}$/.test(v)) { const p = v.split(':'); h = parseInt(p[0]); min = parseInt(p[1]); }
+  else if (/^\d{3,4}$/.test(v)) { if (v.length === 3) { h = parseInt(v[0]); min = parseInt(v.slice(1)); } else { h = parseInt(v.slice(0,2)); min = parseInt(v.slice(2)); } }
+  else return null;
   if (h > 23 || min > 59) return null;
   return h * 60 + min;
 }
-
 function formatTime(v) {
-  if (!v) return v;
-  v = v.trim();
+  if (!v) return v; v = v.trim();
   if (/^\d{1,2}:\d{2}$/.test(v)) return v;
   if (/^\d{3}$/.test(v)) return v[0] + ':' + v.slice(1);
   if (/^\d{4}$/.test(v)) return v.slice(0,2) + ':' + v.slice(2);
   return v;
 }
-
 function calcHours(s, e) {
   const sm = parseTime(s), em = parseTime(e);
   if (sm === null || em === null) return null;
   let d = em - sm; if (d < 0) d += 1440;
   return (d / 60).toFixed(2);
 }
-
 function recalcTotals() {
   let tot = 0, comp = 0, sick = 0;
   document.querySelectorAll('tr[data-day]').forEach(r => {
@@ -313,7 +293,7 @@ function recalcTotals() {
   ['tot-sick', 'bar-sick' ].forEach(id => document.getElementById(id).textContent = f(sick));
 }
 
-/* ── Build rows ── */
+/* ── Rows ── */
 const tbody = document.getElementById('tc-body');
 for (let d = 1; d <= 31; d++) {
   const tr = document.createElement('tr');
@@ -328,13 +308,9 @@ for (let d = 1; d <= 31; d++) {
     <td><input class="ci f-notes" placeholder=""></td>`;
   tbody.appendChild(tr);
   const st = tr.querySelector('.f-start'), en = tr.querySelector('.f-end'), tot = tr.querySelector('.f-total');
-  function makeUpd(s, e, t) {
-    return function() { const h = calcHours(s.value, e.value); t.value = h !== null ? h : ''; recalcTotals(); };
-  }
+  function makeUpd(s, e, t) { return function() { const h = calcHours(s.value, e.value); t.value = h !== null ? h : ''; recalcTotals(); }; }
   const upd = makeUpd(st, en, tot);
-  function autoFormat(inp, callback) {
-    return function() { const formatted = formatTime(inp.value); if (formatted !== null) inp.value = formatted; callback(); };
-  }
+  function autoFormat(inp, cb) { return function() { const f = formatTime(inp.value); if (f !== null) inp.value = f; cb(); }; }
   st.addEventListener('blur', autoFormat(st, upd));
   en.addEventListener('blur', autoFormat(en, upd));
   tr.querySelector('.f-comp').addEventListener('input', recalcTotals);
@@ -409,11 +385,7 @@ function setupUpload(prefix) {
   file.addEventListener('change', e => {
     const f = e.target.files[0]; if (!f) return;
     const reader = new FileReader();
-    reader.onload = ev => {
-      sigData[prefix] = ev.target.result;
-      img.src = ev.target.result; img.style.display = 'block';
-      ph.style.display = 'none'; clr.style.display = 'block';
-    };
+    reader.onload = ev => { sigData[prefix] = ev.target.result; img.src = ev.target.result; img.style.display = 'block'; ph.style.display = 'none'; clr.style.display = 'block'; };
     reader.readAsDataURL(f);
   });
 }
@@ -423,8 +395,7 @@ function clearUpload(prefix) {
   const ph  = document.getElementById(prefix + '-upload-ph');
   const clr = document.getElementById(prefix + '-upload-clear');
   const file= document.getElementById(prefix + '-file');
-  img.src = ''; img.style.display = 'none';
-  ph.style.display = 'block'; clr.style.display = 'none';
+  img.src = ''; img.style.display = 'none'; ph.style.display = 'block'; clr.style.display = 'none';
   file.value = ''; sigData[prefix] = null;
 }
 
@@ -473,28 +444,28 @@ function buildPDF(data) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
   const ml = 36, mr = 576, pw = mr - ml;
   let y = 36;
-  doc.setFont('helvetica','bold'); doc.setFontSize(14);
-  doc.text("Yalobusha County Sheriff's Department", ml, y); y += 16;
-  doc.setFont('helvetica','normal'); doc.setFontSize(9);
-  doc.text('Time and Attendance', ml, y); y += 20;
+  doc.setFont('helvetica','bold'); doc.setFontSize(14.5);
+  doc.text("Yalobusha County Sheriff's Department", ml, y); y += 17;
+  doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
+  doc.text('Time and Attendance', ml, y); y += 21;
   const colW = pw / 2;
   [[['Name:', data.name],['Last 4 of Social:', data.ssn]],[['Employment Status:', data.status]],[['Current Month:', data.month],['Current Year:', data.year]]].forEach(row => {
     row.forEach((item, i) => {
       const x = ml + i * colW;
-      doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.text(item[0], x, y);
+      doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.text(item[0], x, y);
       const lw = doc.getTextWidth(item[0]) + 4;
       doc.setFont('helvetica','normal'); doc.text(item[1]||'', x + lw, y);
       doc.line(x + lw, y + 1, x + colW - 6, y + 1);
-    }); y += 14;
+    }); y += 15;
   }); y += 6;
   const cols = [{label:'Day',w:26},{label:'Start',w:52},{label:'End',w:52},{label:'Total Hrs',w:54},{label:'Comp Hrs',w:54},{label:'Sick Hrs',w:54},{label:'Notes',w:pw-26-52-52-54-54-54}];
-  const rowH = 13, hdrH = 16;
-  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setFillColor(240,240,240);
+  const rowH = 13.5, hdrH = 16.5;
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setFillColor(240,240,240);
   doc.rect(ml, y, pw, hdrH, 'FD');
   let cx = ml;
-  cols.forEach(col => { doc.text(col.label, cx+2, y+11); cx += col.w; if(cx<mr) doc.line(cx,y,cx,y+hdrH); });
+  cols.forEach(col => { doc.text(col.label, cx+2, y+11.5); cx += col.w; if(cx<mr) doc.line(cx,y,cx,y+hdrH); });
   y += hdrH;
-  doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
   const allRows = [];
   for (let day = 1; day <= 31; day++) {
     const found = (data.rows||[]).find(r => parseInt(r.day) === day);
@@ -503,30 +474,24 @@ function buildPDF(data) {
   allRows.forEach(row => {
     const vals = [row.day, row.start, row.end, row.total, row.comp, row.sick, row.notes];
     doc.rect(ml, y, pw, rowH); cx = ml;
-    cols.forEach((col, i) => { if (vals[i]) doc.text(String(vals[i]), cx+2, y+9); cx += col.w; if (cx < mr) doc.line(cx, y, cx, y+rowH); });
+    cols.forEach((col, i) => { if (vals[i]) doc.text(String(vals[i]), cx+2, y+9.5); cx += col.w; if (cx < mr) doc.line(cx, y, cx, y+rowH); });
     y += rowH;
   });
-  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setFillColor(240,240,240);
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setFillColor(240,240,240);
   doc.rect(ml, y, pw, rowH, 'FD');
   const totW = cols[0].w + cols[1].w + cols[2].w;
-  doc.text('Total Hours:', ml+totW-doc.getTextWidth('Total Hours:')-4, y+9);
+  doc.text('Total Hours:', ml+totW-doc.getTextWidth('Total Hours:')-4, y+9.5);
   cx = ml + totW;
-  [data.totTotal, data.totComp, data.totSick].forEach((val, i) => { if (val) doc.text(val, cx+2, y+9); cx += cols[3+i].w; if (cx < mr) doc.line(cx, y, cx, y+rowH); });
+  [data.totTotal, data.totComp, data.totSick].forEach((val, i) => { if (val) doc.text(val, cx+2, y+9.5); cx += cols[3+i].w; if (cx < mr) doc.line(cx, y, cx, y+rowH); });
   y += rowH + 20;
   const sigW = (pw - 32) / 2, sigH = 44;
-  doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
   doc.text('Employee Signature:', ml, y);
-  doc.text('Chief Deputy Signature:', ml+sigW+32, y);
   y += 6;
   if (data.empSrc && data.empSrc.startsWith('data:image')) {
     try { doc.addImage(data.empSrc, 'PNG', ml, y, sigW, sigH-8); } catch(e) {}
   }
   doc.line(ml, y+sigH, ml+sigW, y+sigH);
-  doc.line(ml+sigW+32, y+sigH, ml+sigW+32+sigW, y+sigH);
-  doc.setFont('helvetica','normal'); doc.setFontSize(7);
-  doc.setTextColor(130,130,130);
-  doc.text('Sign here', ml+sigW+34, y+sigH+8);
-  doc.setTextColor(0,0,0);
   return doc;
 }
 
