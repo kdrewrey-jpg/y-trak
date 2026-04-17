@@ -3,195 +3,266 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Y-TRAK Supervisors</title>
+<title>Y-TRAK Approvals</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; color: #111; }
-  .topbar { background: #1a3a6b; color: #fff; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
-  .topbar-left h1 { font-size: 16px; font-weight: bold; margin: 0 0 2px; }
-  .topbar-left p { font-size: 12px; opacity: 0.75; margin: 0; }
-  .topbar-right { display: flex; align-items: center; gap: 16px; }
-  .user-name { font-size: 13px; opacity: 0.85; }
+  body { font-family: Arial, sans-serif; margin: 0; padding: 0; transition: background 0.2s, color 0.2s; }
+  body.light { background: #f4f6fa; color: #111827; }
+  body.dark  { background: #0f1117; color: #e8eaf0; }
+  body.light .topbar { background: #1a3a6b; color: #fff; }
+  body.dark  .topbar { background: #0a1628; color: #e8eaf0; }
+  body.light .card { background: #fff; border: 0.5px solid rgba(0,0,0,0.1); }
+  body.dark  .card { background: #1a1d23; border: 0.5px solid rgba(255,255,255,0.08); }
+  body.light .stat-card { background: #f4f6fa; border: 0.5px solid rgba(0,0,0,0.08); }
+  body.dark  .stat-card { background: #22262e; border: 0.5px solid rgba(255,255,255,0.08); }
+  body.light .tb-btn { background: #f4f6fa; border: 0.5px solid rgba(0,0,0,0.15); color: #111; }
+  body.dark  .tb-btn { background: #22262e; border: 0.5px solid rgba(255,255,255,0.1); color: #e8eaf0; }
+  body.light .tb-btn:hover { background: #e8edf5; }
+  body.dark  .tb-btn:hover { background: #2a2f38; }
+  body.light .tbl-outer { border: 1px solid rgba(0,0,0,0.1); }
+  body.dark  .tbl-outer { border: 1px solid rgba(255,255,255,0.08); }
+  body.light thead { background: #1a3a6b; }
+  body.dark  thead { background: #0a1628; }
+  body.light thead th { color: #c8d8f0; border-right: 1px solid rgba(255,255,255,0.08); }
+  body.dark  thead th { color: #8aafd4; border-right: 1px solid rgba(255,255,255,0.06); }
+  body.light tbody tr:nth-child(even) { background: #f8fafc; }
+  body.dark  tbody tr:nth-child(even) { background: #1e2229; }
+  body.light tbody tr:hover { background: #dbeafe !important; }
+  body.dark  tbody tr:hover { background: #1e3a5f !important; }
+  body.light tbody td { border-right: 1px solid rgba(0,0,0,0.07); border-bottom: 1px solid rgba(0,0,0,0.07); color: #111; }
+  body.dark  tbody td { border-right: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); color: #e8eaf0; }
+  body.light .tbl-footer { background: #f4f6fa; border-top: 1px solid rgba(0,0,0,0.08); }
+  body.dark  .tbl-footer { background: #1a1d23; border-top: 1px solid rgba(255,255,255,0.08); }
+  body.light .filter-grp select { background: #fff; border: 0.5px solid rgba(0,0,0,0.15); color: #111; }
+  body.dark  .filter-grp select { background: #22262e; border: 0.5px solid rgba(255,255,255,0.1); color: #e8eaf0; }
+  body.light .mode-btn { background: #f4f6fa; border: 0.5px solid rgba(0,0,0,0.15); color: #555; }
+  body.dark  .mode-btn { background: #22262e; border: 0.5px solid rgba(255,255,255,0.1); color: #9aa3b2; }
+  body.light .mode-btn:hover { background: #e8edf5; }
+  body.dark  .mode-btn:hover { background: #2a2f38; }
+  body.light .text2 { color: #6b7280; }
+  body.dark  .text2 { color: #9aa3b2; }
+  .topbar { padding: 13px 24px; display: flex; align-items: center; justify-content: space-between; }
+  .topbar h1 { font-size: 16px; font-weight: bold; margin: 0 0 2px; }
+  .topbar p { font-size: 12px; opacity: 0.75; margin: 0; }
   .sign-out { font-size: 13px; color: #aac4f0; cursor: pointer; background: none; border: none; font-family: Arial, sans-serif; text-decoration: underline; }
-  .container { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
-  .stat { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 16px 20px; }
-  .stat-num { font-size: 28px; font-weight: bold; color: #1a5dc8; margin: 0 0 4px; }
-  .stat-label { font-size: 12px; color: #888; margin: 0; }
-  .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
-  .tab { padding: 10px 20px; font-size: 14px; cursor: pointer; border: none; background: none; color: #666; font-family: Arial, sans-serif; border-bottom: 2px solid transparent; margin-bottom: -2px; }
-  .tab.active { color: #1a5dc8; border-bottom-color: #1a5dc8; font-weight: bold; }
-  .card { background: #fff; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  thead th { background: #f5f5f5; padding: 10px 14px; text-align: left; font-size: 12px; color: #555; font-weight: bold; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #ddd; white-space: nowrap; }
-  tbody td { padding: 12px 14px; border-bottom: 1px solid #eee; vertical-align: middle; }
-  tbody tr:last-child td { border-bottom: none; }
-  tbody tr:hover td { background: #f8f9ff; }
-  .badge { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: bold; }
-  .badge-pending { background: #fff8e0; color: #8a6000; border: 1px solid #e0c060; }
-  .badge-reviewed { background: #e8f0fe; color: #1a3a6b; border: 1px solid #aac4f0; }
-  .badge-approved { background: #eaf7ee; color: #1a6a30; border: 1px solid #a0d8b0; }
-  .review-btn { padding: 6px 14px; font-size: 13px; border: 1px solid #1a5dc8; border-radius: 6px; background: #fff; color: #1a5dc8; cursor: pointer; font-family: Arial, sans-serif; }
-  .review-btn:hover { background: #e8f0ff; }
-  .empty { text-align: center; padding: 40px; color: #888; font-size: 14px; }
-  .loading { text-align: center; padding: 40px; color: #888; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 20px 16px; }
+  .card { border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .inner-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+  .page-title { font-size: 15px; font-weight: 500; }
+  .page-sub { font-size: 11px; margin-top: 2px; }
+  .top-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .filter-grp { display: flex; align-items: center; gap: 6px; }
+  .filter-grp label { font-size: 11px; }
+  .filter-grp select { font-size: 12px; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-family: Arial, sans-serif; }
+  .mode-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap; font-family: Arial, sans-serif; }
+  .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 14px; }
+  .stat-card { border-radius: 10px; padding: 10px 14px; }
+  .stat-num { font-size: 22px; font-weight: 500; }
+  .stat-lbl { font-size: 11px; margin-top: 2px; }
+  .num-blue  { color: #3b82f6; }
+  .num-green { color: #10b981; }
+  .num-amber { color: #f59e0b; }
+  .toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+  .tb-btn { font-size: 12px; font-weight: 500; padding: 7px 13px; border-radius: 7px; cursor: pointer; display: flex; align-items: center; gap: 5px; white-space: nowrap; font-family: Arial, sans-serif; }
+  .tb-btn.primary { background: #1a7a3a !important; color: #fff !important; border-color: #1a7a3a !important; }
+  .tb-btn.primary:hover { background: #155e2e !important; }
+  .tbl-outer { border-radius: 10px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+  thead th { padding: 10px 10px; text-align: left; font-weight: 500; font-size: 11px; white-space: nowrap; overflow: hidden; }
+  tbody tr { transition: background 0.1s; }
+  tbody td { padding: 9px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .emp-link { color: #3b82f6; text-decoration: none; font-weight: 500; cursor: pointer; }
+  .emp-link:hover { text-decoration: underline; }
+  .badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 8px; font-weight: 500; }
+  .badge-pend { background: rgba(245,158,11,0.15); color: #d97706; border: 0.5px solid rgba(245,158,11,0.3); }
+  .badge-val  { background: rgba(59,130,246,0.15); color: #3b82f6; border: 0.5px solid rgba(59,130,246,0.3); }
+  .badge-appr { background: rgba(16,185,129,0.15); color: #10b981; border: 0.5px solid rgba(16,185,129,0.3); }
+  .hrs-comp { font-weight: 500; color: #10b981; }
+  .hrs-sick { font-weight: 500; color: #ef4444; }
+  .tbl-footer { padding: 7px 12px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
+  .loading { text-align: center; padding: 40px; }
+  .empty   { text-align: center; padding: 40px; }
 </style>
 </head>
-<body>
+<body class="light">
 
 <div class="topbar">
-  <div class="topbar-left">
-    <h1>Y-TRAK — Supervisor Portal</h1>
+  <div>
+    <h1>Y-TRAK — Approval Portal</h1>
     <p>Yalobusha County Sheriff's Department</p>
   </div>
-  <div class="topbar-right">
-    <span class="user-name" id="user-name"></span>
-    <button class="sign-out" onclick="signOut()">Sign out</button>
-  </div>
+  <button class="sign-out" onclick="signOut()">Sign out</button>
 </div>
 
 <div class="container">
-  <div class="stats">
-    <div class="stat"><p class="stat-num" id="stat-pending">—</p><p class="stat-label" id="stat-pending-label">Pending</p></div>
-    <div class="stat"><p class="stat-num" id="stat-second">—</p><p class="stat-label" id="stat-second-label">—</p></div>
-    <div class="stat"><p class="stat-num" id="stat-total">—</p><p class="stat-label">Total submissions</p></div>
-  </div>
-
-  <div class="tabs" id="tab-bar"></div>
-
   <div class="card">
-    <div id="loading" class="loading">Loading timesheets…</div>
-    <table id="sheet-table" style="display:none;">
-      <thead><tr>
-        <th>Employee</th>
-        <th>Period</th>
-        <th>Total Hrs</th>
-        <th>Submitted</th>
-        <th>Status</th>
-        <th></th>
-      </tr></thead>
-      <tbody id="sheet-body"></tbody>
-    </table>
-    <div id="sheet-empty" class="empty" style="display:none;">No timesheets found.</div>
+
+    <div class="inner-top">
+      <div>
+        <div class="page-title">Approval Spreadsheet</div>
+        <div class="page-sub text2" id="period-label">Loading…</div>
+      </div>
+      <div class="top-right">
+        <div class="filter-grp"><label class="text2">Month</label>
+          <select id="f-month" onchange="applyFilter()">
+            <option value="">All</option>
+            <option>January</option><option>February</option><option>March</option>
+            <option>April</option><option>May</option><option>June</option>
+            <option>July</option><option>August</option><option>September</option>
+            <option>October</option><option>November</option><option>December</option>
+          </select>
+        </div>
+        <div class="filter-grp"><label class="text2">Year</label>
+          <select id="f-year" onchange="applyFilter()">
+            <option>2026</option><option>2025</option><option>2024</option>
+          </select>
+        </div>
+        <button class="mode-btn" id="mode-btn" onclick="toggleMode()">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.5 3.5l1.4 1.4M11.1 11.1l1.4 1.4M3.5 12.5l1.4-1.4M11.1 4.9l1.4-1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Light mode
+        </button>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num num-blue"  id="s-total">—</div><div class="stat-lbl text2">Total timesheets</div></div>
+      <div class="stat-card"><div class="stat-num"           id="s-pending">—</div><div class="stat-lbl text2">Awaiting approval</div></div>
+      <div class="stat-card"><div class="stat-num num-green" id="s-appr">—</div><div class="stat-lbl text2">Approved</div></div>
+      <div class="stat-card"><div class="stat-num num-amber" id="s-hrs">—</div><div class="stat-lbl text2">Total hours</div></div>
+    </div>
+
+    <div class="tbl-outer">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:95px;">Status</th>
+            <th style="min-width:170px;">Employee name</th>
+            <th style="width:82px;">Total hrs</th>
+            <th style="width:82px;">Comp hrs</th>
+            <th style="width:82px;">Sick hrs</th>
+            <th style="width:95px;">Submitted</th>
+            <th style="width:130px;">Validated by</th>
+            <th style="width:110px;">Period</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-body">
+          <tr><td colspan="8" class="loading text2">Loading timesheets…</td></tr>
+        </tbody>
+      </table>
+      <div class="tbl-footer">
+        <span class="text2">* Click an employee name to open their timesheet for final approval</span>
+        <span class="text2" id="tbl-count"></span>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <script>
+if (!sessionStorage.getItem('ytrak-staff')) window.location.href = '/supervisor.html';
+
 const sb = supabase.createClient(
   'https://kwgfonwgeoievgxwvxlg.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3Z2ZvbndnZW9pZXZneHd2eGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4Mzk4MDQsImV4cCI6MjA5MTQxNTgwNH0.KrH-loytrritpSgy6MVBmT0KyyodDp27ZLSATm1dGsM'
 );
 
-let allSheets = [];
-let currentTab = 'pending';
-let currentSupervisor = null;
+let allSheets = [], filtered = [];
+let isDark = false;
 
 async function init() {
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) { window.location.href = '/supervisor.html'; return; }
-
-  const { data: profile } = await sb.from('supervisors').select('*').eq('id', session.user.id).single();
-  currentSupervisor = profile;
-  document.getElementById('user-name').textContent = profile?.name || session.user.email;
-
-  buildTabs();
+  await sb.auth.signOut();
   await loadSheets();
 }
 
-function buildTabs() {
-  const tabBar = document.getElementById('tab-bar');
-  if (currentSupervisor?.role === 'reviewer') {
-    tabBar.innerHTML = `
-      <button class="tab active" id="tab-pending"  onclick="showTab('pending')">Pending</button>
-      <button class="tab"        id="tab-reviewed" onclick="showTab('reviewed')">Validated</button>`;
-    document.getElementById('stat-second-label').textContent = 'Validated';
-  } else {
-    tabBar.innerHTML = `
-      <button class="tab active" id="tab-pending"  onclick="showTab('pending')">Pending Approval</button>
-      <button class="tab"        id="tab-approved" onclick="showTab('approved')">Approved</button>
-      <button class="tab"        id="tab-all"      onclick="showTab('all')">All Timesheets</button>`;
-    document.getElementById('stat-pending-label').textContent = 'Awaiting approval';
-    document.getElementById('stat-second-label').textContent  = 'Approved this month';
-  }
-}
-
 async function loadSheets() {
-  document.getElementById('loading').style.display = 'block';
-  document.getElementById('sheet-table').style.display = 'none';
-  document.getElementById('sheet-empty').style.display = 'none';
-
   const { data, error } = await sb.from('timesheets').select('*').order('submitted_at', { ascending: false });
-  if (error) { document.getElementById('loading').textContent = 'Error loading timesheets.'; return; }
-
+  if (error) { document.getElementById('tbl-body').innerHTML = '<tr><td colspan="8" class="empty text2">Error loading timesheets.</td></tr>'; return; }
   allSheets = data || [];
-  const thisMonth = new Date().toLocaleString('default', { month: 'long' });
-
-  if (currentSupervisor?.role === 'reviewer') {
-    document.getElementById('stat-pending').textContent = allSheets.filter(s => s.status === 'pending').length;
-    document.getElementById('stat-second').textContent  = allSheets.filter(s => s.status === 'reviewed').length;
-  } else {
-    document.getElementById('stat-pending').textContent = allSheets.filter(s => s.status === 'reviewed').length;
-    document.getElementById('stat-second').textContent  = allSheets.filter(s => s.status === 'approved' && s.month === thisMonth).length;
-  }
-  document.getElementById('stat-total').textContent = allSheets.length;
-
-  renderTab(currentTab);
+  setDefaultFilter();
+  applyFilter();
 }
 
-function getBadge(status) {
-  if (status === 'approved') return '<span class="badge badge-approved">Approved</span>';
-  if (status === 'reviewed') return '<span class="badge badge-reviewed">Validated</span>';
-  return '<span class="badge badge-pending">Pending</span>';
+function setDefaultFilter() {
+  const now = new Date();
+  const monthName = now.toLocaleString('default', { month: 'long' });
+  const year = String(now.getFullYear());
+  const mSel = document.getElementById('f-month');
+  const ySel = document.getElementById('f-year');
+  for (let i = 0; i < mSel.options.length; i++) { if (mSel.options[i].text === monthName) { mSel.selectedIndex = i; break; } }
+  for (let i = 0; i < ySel.options.length; i++) { if (ySel.options[i].text === year) { ySel.selectedIndex = i; break; } }
 }
 
-function renderTab(tab) {
-  currentTab = tab;
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  const activeTab = document.getElementById('tab-' + tab);
-  if (activeTab) activeTab.classList.add('active');
+function applyFilter() {
+  const fm = document.getElementById('f-month').value;
+  const fy = document.getElementById('f-year').value;
+  filtered = allSheets.filter(s => {
+    if (fm && s.month !== fm) return false;
+    if (fy && s.year  !== fy) return false;
+    return true;
+  });
+  renderTable();
+  const label = [fm, fy].filter(Boolean).join(' ') || 'All periods';
+  document.getElementById('period-label').textContent = label;
+}
 
-  let rows = allSheets;
+function badge(s) {
+  if (s === 'reviewed') return '<span class="badge badge-val">Validated</span>';
+  if (s === 'approved') return '<span class="badge badge-appr">Approved</span>';
+  return '<span class="badge badge-pend">Pending</span>';
+}
 
-  if (currentSupervisor?.role === 'reviewer') {
-    if (tab === 'pending')  rows = allSheets.filter(s => s.status === 'pending');
-    if (tab === 'reviewed') rows = allSheets.filter(s => s.status === 'reviewed');
-  } else {
-    if (tab === 'pending')  rows = allSheets.filter(s => s.status === 'reviewed');
-    if (tab === 'approved') rows = allSheets.filter(s => s.status === 'approved');
+function hrsCell(v, cls) {
+  if (!v || v === '0.00') return `<span class="text2">—</span>`;
+  return `<span class="${cls}">${v}</span>`;
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tbl-body');
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty text2">No timesheets found for this period.</td></tr>';
+    updateStats(); return;
   }
-
-  document.getElementById('loading').style.display = 'none';
-
-  if (rows.length === 0) {
-    document.getElementById('sheet-table').style.display = 'none';
-    document.getElementById('sheet-empty').style.display = 'block';
-    document.getElementById('sheet-empty').textContent = 'No timesheets found.';
-    return;
-  }
-
-  const tbody = document.getElementById('sheet-body');
-  tbody.innerHTML = rows.map(s => {
-    const date = new Date(s.submitted_at).toLocaleDateString();
+  tbody.innerHTML = filtered.map(s => {
+    const date = s.submitted_at ? new Date(s.submitted_at).toLocaleDateString() : '—';
     return `<tr>
-      <td><strong>${s.employee_name}</strong><br><span style="font-size:12px;color:#888;">${s.employment_status}</span></td>
-      <td>${s.month} ${s.year}</td>
-      <td>${s.total_hours}</td>
-      <td>${date}</td>
-      <td>${getBadge(s.status)}</td>
-      <td><button class="review-btn" onclick="window.location.href='/review.html?id=${s.id}'">${currentSupervisor?.role === 'reviewer' ? 'Review' : 'Review'}</button></td>
+      <td>${badge(s.status)}</td>
+      <td><a class="emp-link" onclick="openSheet('${s.id}')">${s.employee_name}</a></td>
+      <td>${s.total_hours||'—'}</td>
+      <td>${hrsCell(s.comp_hours,'hrs-comp')}</td>
+      <td>${hrsCell(s.sick_hours,'hrs-sick')}</td>
+      <td class="text2">${date}</td>
+      <td class="text2">${s.reviewed_by_name||'—'}</td>
+      <td class="text2">${(s.month||'')} ${(s.year||'')}</td>
     </tr>`;
   }).join('');
-
-  document.getElementById('sheet-table').style.display = 'table';
-  document.getElementById('sheet-empty').style.display = 'none';
+  updateStats();
 }
 
-function showTab(tab) { renderTab(tab); }
+function updateStats() {
+  const pending = filtered.filter(s => s.status === 'reviewed').length;
+  const apprCnt = filtered.filter(s => s.status === 'approved').length;
+  const total   = filtered.reduce((acc, s) => acc + (parseFloat(s.total_hours)||0), 0);
+  document.getElementById('s-total').textContent   = filtered.length;
+  document.getElementById('s-pending').textContent = pending;
+  document.getElementById('s-appr').textContent    = apprCnt;
+  document.getElementById('s-hrs').textContent     = total.toFixed(2);
+  document.getElementById('tbl-count').textContent = `${filtered.length} timesheet(s)`;
+}
 
-async function signOut() {
-  await sb.auth.signOut();
-  window.location.href = '/supervisor.html';
+function openSheet(id) { window.location.href = `/review.html?id=${id}`; }
+
+function signOut() { sessionStorage.removeItem('ytrak-staff'); window.location.href = '/supervisor.html'; }
+
+function toggleMode() {
+  isDark = !isDark;
+  document.body.classList.toggle('dark', isDark);
+  document.body.classList.toggle('light', !isDark);
+  const btn = document.getElementById('mode-btn');
+  btn.innerHTML = isDark
+    ? '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M13 8.5A5.5 5.5 0 116 2c-.5 2 0 5 2.5 6.5S13 9 13 8.5z" stroke="currentColor" stroke-width="1.4" fill="none"/></svg> Dark mode'
+    : '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="4" stroke="currentColor" stroke-width="1.4"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.5 3.5l1.4 1.4M11.1 11.1l1.4 1.4M3.5 12.5l1.4-1.4M11.1 4.9l1.4-1.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg> Light mode';
 }
 
 init();
