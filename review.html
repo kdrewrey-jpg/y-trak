@@ -38,6 +38,8 @@
   .btn:hover { background: #e8e8e8; }
   .btn.delete { color: #c0392b; border-color: #e0a0a0; }
   .btn.delete:hover { background: #fff0f0; }
+  .btn.return-emp { color: #8a5000; border-color: #e0c060; background: #fffbea; }
+  .btn.return-emp:hover { background: #fff3c0; }
   .btn.unapprove { color: #c0392b; border-color: #e0a0a0; }
   .btn.unapprove:hover { background: #fff0f0; }
   .btn.validate { background: #1a5dc8; color: #fff; border-color: #1a5dc8; }
@@ -50,10 +52,12 @@
   .status-banner { border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 8px; }
   .status-reviewed { background: #e8f0fe; border: 1px solid #aac4f0; color: #1a3a6b; }
   .status-approved { background: #eaf7ee; border: 1px solid #a0d8b0; color: #1a6a30; }
+  .status-returned { background: #fff8e0; border: 1px solid #f0c030; color: #5a4000; }
   .badge { display: inline-block; font-size: 12px; padding: 3px 12px; border-radius: 20px; font-weight: bold; margin-left: 8px; vertical-align: middle; }
   .badge-pending  { background: #fff8e0; color: #8a6000; border: 1px solid #e0c060; }
   .badge-reviewed { background: #e8f0fe; color: #1a3a6b; border: 1px solid #aac4f0; }
   .badge-approved { background: #eaf7ee; color: #1a6a30; border: 1px solid #a0d8b0; }
+  .badge-returned { background: #fff8e0; color: #8a6000; border: 1px solid #e0c060; }
   .loading { text-align: center; padding: 60px; color: #888; }
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
   .modal-overlay.open { display: flex; }
@@ -75,11 +79,15 @@
   .modal-btn { padding: 9px 20px; font-size: 14px; border: 1px solid #bbb; border-radius: 7px; background: #f5f5f5; color: #111; cursor: pointer; font-family: Arial, sans-serif; }
   .modal-btn.confirm { background: #1a7a3a; color: #fff; border-color: #1a7a3a; }
   .modal-btn.confirm:hover { background: #155e2e; }
+  .modal-btn.return-confirm { background: #c07000; color: #fff; border-color: #c07000; }
+  .modal-btn.return-confirm:hover { background: #a05800; }
   .modal-btn:hover { background: #e8e8e8; }
   .sig-small-actions { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 4px; }
   .sig-small-btn { font-size: 11px; padding: 3px 10px; border: 1px solid #ccc; border-radius: 5px; background: #f5f5f5; color: #555; cursor: pointer; font-family: Arial, sans-serif; }
   .name-input { width: 100%; padding: 9px 12px; font-size: 14px; border: 1px solid #ccc; border-radius: 7px; font-family: Arial, sans-serif; margin-bottom: 14px; }
   .name-input:focus { outline: none; border-color: #1a5dc8; }
+  .return-note-input { width: 100%; padding: 9px 12px; font-size: 14px; border: 1px solid #ccc; border-radius: 7px; font-family: Arial, sans-serif; min-height: 80px; resize: vertical; }
+  .return-note-input:focus { outline: none; border-color: #c07000; }
 </style>
 </head>
 <body>
@@ -89,13 +97,14 @@
     <h1>Y-TRAK — Timesheet Review</h1>
     <p>Yalobusha County Sheriff's Department</p>
   </div>
-  <button class="back-btn" onclick="window.location.href='/validate.html'">← Back</button>
+  <button class="back-btn" onclick="goBack()">← Back</button>
 </div>
 
 <div class="container">
   <div id="loading" class="loading">Loading timesheet…</div>
   <div id="page-content" style="display:none;">
 
+    <div id="banner-returned" style="display:none;" class="status-banner status-returned"></div>
     <div id="banner-reviewed" style="display:none;" class="status-banner status-reviewed"></div>
     <div id="banner-approved" style="display:none;" class="status-banner status-approved"></div>
 
@@ -163,6 +172,20 @@
   </div>
 </div>
 
+<!-- Return to employee modal -->
+<div class="modal-overlay" id="return-modal">
+  <div class="modal">
+    <h3>Return to Employee</h3>
+    <p>The timesheet will be sent back to the employee with your note. They can correct and resubmit.</p>
+    <input type="text" class="name-input" id="return-your-name" placeholder="Your full name">
+    <textarea class="return-note-input" id="return-note" placeholder="Reason for returning (optional) — e.g. Missing hours on day 14"></textarea>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeReturnModal()">Cancel</button>
+      <button class="modal-btn return-confirm" onclick="confirmReturn()">Return to Employee</button>
+    </div>
+  </div>
+</div>
+
 <!-- Approve signature modal -->
 <div class="modal-overlay" id="sig-modal">
   <div class="modal">
@@ -213,9 +236,14 @@ let sigMode = 'draw';
 let uploadedSig = null;
 const id = new URLSearchParams(window.location.search).get('id');
 
+function goBack() {
+  const role = sessionStorage.getItem('ytrak-staff');
+  window.location.href = role === 'supervisor' ? '/dashboard.html' : '/validate.html';
+}
+
 async function init() {
   await sb.auth.signOut();
-  if (!id) { window.location.href = '/validate.html'; return; }
+  if (!id) { goBack(); return; }
   const { data, error } = await sb.from('timesheets').select('*').eq('id', id).single();
   if (error || !data) { document.getElementById('loading').textContent = 'Timesheet not found.'; return; }
   sheetData = data;
@@ -226,6 +254,7 @@ async function init() {
 function getBadge(status) {
   if (status === 'approved') return '<span class="badge badge-approved">Approved</span>';
   if (status === 'reviewed') return '<span class="badge badge-reviewed">Validated</span>';
+  if (status === 'returned') return '<span class="badge badge-returned">Returned</span>';
   return '<span class="badge badge-pending">Pending</span>';
 }
 
@@ -236,6 +265,9 @@ function buildActionBar() {
   const deleteBtn = `<button class="btn delete" onclick="deleteSheet()">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 9h8l1-9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Delete
   </button>`;
+  const returnBtn = `<button class="btn return-emp" onclick="openReturnModal()">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4-4M3 8l4 4M3 8h8a2 2 0 000-4H9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Return to Employee
+  </button>`;
   const downloadBtn = `<button class="btn" onclick="downloadPDF()">
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/><path d="M2 12h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Download PDF
   </button>`;
@@ -243,8 +275,8 @@ function buildActionBar() {
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="1" width="10" height="5" rx="1" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="1" y="6" width="14" height="7" rx="1" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="4" y="10" width="8" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="12" cy="9" r="1" fill="currentColor"/></svg>Print
   </button>`;
 
-  if (d.status === 'pending') {
-    bar.innerHTML = deleteBtn + downloadBtn + printBtn + `
+  if (d.status === 'pending' || d.status === 'returned') {
+    bar.innerHTML = deleteBtn + returnBtn + downloadBtn + printBtn + `
       <button class="btn validate" onclick="openValidateModal()">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Validate
       </button>
@@ -252,7 +284,7 @@ function buildActionBar() {
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>Final Approval
       </button>`;
   } else if (d.status === 'reviewed') {
-    bar.innerHTML = deleteBtn + downloadBtn + printBtn + `
+    bar.innerHTML = deleteBtn + returnBtn + downloadBtn + printBtn + `
       <button class="btn unapprove" onclick="unvalidateSheet()">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/></svg>Unvalidate
       </button>
@@ -272,11 +304,11 @@ function renderSheet(d) {
   document.getElementById('loading').style.display = 'none';
   document.getElementById('page-content').style.display = 'block';
   document.getElementById('sheet-title').innerHTML = `${d.employee_name} — ${d.month} ${d.year} ${getBadge(d.status)}`;
-  document.getElementById('m-name').textContent    = d.employee_name;
-  document.getElementById('m-ssn').textContent     = d.ssn_last4;
-  document.getElementById('m-status').textContent  = d.employment_status;
-  document.getElementById('m-month').textContent   = d.month;
-  document.getElementById('m-year').textContent    = d.year;
+  document.getElementById('m-name').textContent      = d.employee_name;
+  document.getElementById('m-ssn').textContent       = d.ssn_last4;
+  document.getElementById('m-status').textContent    = d.employment_status;
+  document.getElementById('m-month').textContent     = d.month;
+  document.getElementById('m-year').textContent      = d.year;
   document.getElementById('m-submitted').textContent = new Date(d.submitted_at).toLocaleString();
   const rows = d.rows || [];
   document.getElementById('rows-body').innerHTML = rows.map(r => `<tr>
@@ -291,9 +323,54 @@ function renderSheet(d) {
   document.getElementById('bar-sick').textContent  = d.sick_hours;
   if (d.emp_signature) { const img = document.getElementById('emp-sig'); img.src = d.emp_signature; img.style.display = 'block'; }
   if (d.dep_signature) { const img = document.getElementById('dep-sig'); img.src = d.dep_signature; img.style.display = 'block'; document.getElementById('dep-sig-placeholder').style.display = 'none'; }
+  if (d.status === 'returned') { const b = document.getElementById('banner-returned'); b.textContent = `⚠ Returned to employee${d.return_note ? ': ' + d.return_note : ''} — awaiting resubmission`; b.style.display = 'block'; }
   if (d.reviewed_by_name) { const b = document.getElementById('banner-reviewed'); b.textContent = `✓ Validated by ${d.reviewed_by_name} on ${new Date(d.reviewed_at).toLocaleString()}`; b.style.display = 'block'; }
   if (d.status === 'approved') { const b = document.getElementById('banner-approved'); b.textContent = `✓ Approved by ${d.approved_by_name} on ${new Date(d.approved_at).toLocaleString()}`; b.style.display = 'block'; }
   buildActionBar();
+}
+
+/* ── Return to employee modal ── */
+function openReturnModal() {
+  document.getElementById('return-your-name').value = '';
+  document.getElementById('return-note').value = '';
+  document.getElementById('return-modal').classList.add('open');
+}
+function closeReturnModal() { document.getElementById('return-modal').classList.remove('open'); }
+
+async function confirmReturn() {
+  const yourName = document.getElementById('return-your-name').value.trim();
+  const note     = document.getElementById('return-note').value.trim();
+  if (!yourName) { alert('Please enter your name.'); return; }
+  try {
+    const res = await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${sheetData.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'apikey': SERVICE_KEY, 'Authorization': 'Bearer ' + SERVICE_KEY, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({
+        status: 'returned',
+        return_note: note || null,
+        reviewed_by_name: null,
+        reviewed_at: null,
+        approved_by_name: null,
+        approved_at: null,
+        dep_signature: null
+      })
+    });
+    if (!res.ok) throw new Error('Failed — status ' + res.status);
+    sheetData.status = 'returned';
+    sheetData.return_note = note || null;
+    sheetData.reviewed_by_name = null;
+    sheetData.approved_by_name = null;
+    sheetData.dep_signature = null;
+    document.getElementById('banner-reviewed').style.display = 'none';
+    document.getElementById('banner-approved').style.display = 'none';
+    const b = document.getElementById('banner-returned');
+    b.textContent = `⚠ Returned to employee${note ? ': ' + note : ''} — awaiting resubmission`;
+    b.style.display = 'block';
+    document.getElementById('sheet-title').innerHTML = `${sheetData.employee_name} — ${sheetData.month} ${sheetData.year} ${getBadge('returned')}`;
+    closeReturnModal();
+    buildActionBar();
+    alert(`Timesheet returned to ${sheetData.employee_name}. They will see it when they next log in.`);
+  } catch(err) { alert('Failed: ' + err.message); }
 }
 
 /* ── Validate modal ── */
@@ -308,12 +385,13 @@ async function confirmValidation() {
     const res = await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${sheetData.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'apikey': SERVICE_KEY, 'Authorization': 'Bearer ' + SERVICE_KEY, 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ status: 'reviewed', reviewed_by_name: name, reviewed_at: now })
+      body: JSON.stringify({ status: 'reviewed', reviewed_by_name: name, reviewed_at: now, return_note: null })
     });
     if (!res.ok) throw new Error('Failed');
     sheetData.status = 'reviewed'; sheetData.reviewed_by_name = name; sheetData.reviewed_at = now;
     const b = document.getElementById('banner-reviewed');
     b.textContent = `✓ Validated by ${name} on ${new Date(now).toLocaleString()}`; b.style.display = 'block';
+    document.getElementById('banner-returned').style.display = 'none';
     document.getElementById('sheet-title').innerHTML = `${sheetData.employee_name} — ${sheetData.month} ${sheetData.year} ${getBadge('reviewed')}`;
     closeValidateModal();
     buildActionBar();
@@ -339,151 +417,104 @@ async function unvalidateSheet() {
 
 /* ── Canvas ── */
 function setupCanvas() {
-  const canvas = document.getElementById('sig-canvas');
-  const wrap   = document.getElementById('canvas-wrap');
-  const hint   = document.getElementById('canvas-hint');
-  function resize() {
-    const dpr = window.devicePixelRatio||1, w = wrap.clientWidth;
-    canvas.width = w*dpr; canvas.height = 120*dpr;
-    canvas.style.width = w+'px'; canvas.style.height = '120px';
-    const ctx = canvas.getContext('2d');
-    ctx.scale(dpr,dpr); ctx.strokeStyle='#111'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.lineJoin='round';
-  }
-  resize(); window.addEventListener('resize', resize);
-  let drawing = false;
-  function getPos(e) { const rect=canvas.getBoundingClientRect(); const src=e.touches?e.touches[0]:e; return {x:src.clientX-rect.left,y:src.clientY-rect.top}; }
-  function start(e) { e.preventDefault(); drawing=true; hint.style.display='none'; const ctx=canvas.getContext('2d'); const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
-  function move(e)  { if(!drawing)return; e.preventDefault(); const ctx=canvas.getContext('2d'); const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
-  function end()    { drawing=false; }
-  canvas.addEventListener('mousedown',start); canvas.addEventListener('mousemove',move); canvas.addEventListener('mouseup',end); canvas.addEventListener('mouseleave',end);
-  canvas.addEventListener('touchstart',start,{passive:false}); canvas.addEventListener('touchmove',move,{passive:false}); canvas.addEventListener('touchend',end);
+  const canvas=document.getElementById('sig-canvas'),wrap=document.getElementById('canvas-wrap'),hint=document.getElementById('canvas-hint');
+  function resize(){const dpr=window.devicePixelRatio||1,w=wrap.clientWidth;canvas.width=w*dpr;canvas.height=120*dpr;canvas.style.width=w+'px';canvas.style.height='120px';const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);ctx.strokeStyle='#111';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';}
+  resize();window.addEventListener('resize',resize);
+  let drawing=false;
+  function getPos(e){const rect=canvas.getBoundingClientRect();const src=e.touches?e.touches[0]:e;return{x:src.clientX-rect.left,y:src.clientY-rect.top};}
+  function start(e){e.preventDefault();drawing=true;hint.style.display='none';const ctx=canvas.getContext('2d');const p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);}
+  function move(e){if(!drawing)return;e.preventDefault();const ctx=canvas.getContext('2d');const p=getPos(e);ctx.lineTo(p.x,p.y);ctx.stroke();ctx.beginPath();ctx.moveTo(p.x,p.y);}
+  function end(){drawing=false;}
+  canvas.addEventListener('mousedown',start);canvas.addEventListener('mousemove',move);canvas.addEventListener('mouseup',end);canvas.addEventListener('mouseleave',end);
+  canvas.addEventListener('touchstart',start,{passive:false});canvas.addEventListener('touchmove',move,{passive:false});canvas.addEventListener('touchend',end);
 }
-function clearCanvas() { const canvas=document.getElementById('sig-canvas'),dpr=window.devicePixelRatio||1; canvas.getContext('2d').clearRect(0,0,canvas.width/dpr,canvas.height/dpr); document.getElementById('canvas-hint').style.display='flex'; }
-function switchMode(mode) {
-  sigMode=mode;
-  document.getElementById('toggle-draw').classList.toggle('active',mode==='draw');
-  document.getElementById('toggle-upload').classList.toggle('active',mode==='upload');
-  document.getElementById('draw-section').style.display   = mode==='draw'   ? 'block' : 'none';
-  document.getElementById('upload-section').style.display = mode==='upload' ? 'block' : 'none';
-}
-function handleUpload(e) {
-  const f=e.target.files[0]; if(!f) return;
-  const reader=new FileReader();
-  reader.onload=ev=>{ uploadedSig=ev.target.result; const img=document.getElementById('upload-preview'); img.src=uploadedSig; img.style.display='block'; document.getElementById('upload-placeholder').style.display='none'; };
-  reader.readAsDataURL(f);
-}
-function clearUpload() { uploadedSig=null; document.getElementById('upload-preview').src=''; document.getElementById('upload-preview').style.display='none'; document.getElementById('upload-placeholder').style.display='block'; document.getElementById('sig-file').value=''; }
-function openSignModal() { clearCanvas(); clearUpload(); switchMode('draw'); document.getElementById('approver-name').value=''; document.getElementById('sig-modal').classList.add('open'); }
-function closeSignModal() { document.getElementById('sig-modal').classList.remove('open'); }
+function clearCanvas(){const canvas=document.getElementById('sig-canvas'),dpr=window.devicePixelRatio||1;canvas.getContext('2d').clearRect(0,0,canvas.width/dpr,canvas.height/dpr);document.getElementById('canvas-hint').style.display='flex';}
+function switchMode(mode){sigMode=mode;document.getElementById('toggle-draw').classList.toggle('active',mode==='draw');document.getElementById('toggle-upload').classList.toggle('active',mode==='upload');document.getElementById('draw-section').style.display=mode==='draw'?'block':'none';document.getElementById('upload-section').style.display=mode==='upload'?'block':'none';}
+function handleUpload(e){const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=ev=>{uploadedSig=ev.target.result;const img=document.getElementById('upload-preview');img.src=uploadedSig;img.style.display='block';document.getElementById('upload-placeholder').style.display='none';};reader.readAsDataURL(f);}
+function clearUpload(){uploadedSig=null;document.getElementById('upload-preview').src='';document.getElementById('upload-preview').style.display='none';document.getElementById('upload-placeholder').style.display='block';document.getElementById('sig-file').value='';}
+function openSignModal(){clearCanvas();clearUpload();switchMode('draw');document.getElementById('approver-name').value='';document.getElementById('sig-modal').classList.add('open');}
+function closeSignModal(){document.getElementById('sig-modal').classList.remove('open');}
 
 async function confirmFinalApproval() {
-  const name = document.getElementById('approver-name').value.trim();
-  if (!name) { alert('Please enter your name.'); return; }
-  let sigData = sigMode==='draw' ? document.getElementById('sig-canvas').toDataURL('image/png') : uploadedSig;
-  if (!sigData) { alert('Please provide a signature.'); return; }
-  const confirmBtn = document.getElementById('confirm-btn');
-  confirmBtn.disabled=true; confirmBtn.textContent='Approving…';
+  const name=document.getElementById('approver-name').value.trim();
+  if(!name){alert('Please enter your name.');return;}
+  let sigData=sigMode==='draw'?document.getElementById('sig-canvas').toDataURL('image/png'):uploadedSig;
+  if(!sigData){alert('Please provide a signature.');return;}
+  const confirmBtn=document.getElementById('confirm-btn');
+  confirmBtn.disabled=true;confirmBtn.textContent='Approving…';
   try {
-    const res = await fetch('/.netlify/functions/approve-timesheet', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ id: sheetData.id, supervisor_name: name, supervisor_email: '', dep_signature: sigData })
-    });
-    const json = await res.json();
-    if (!json.success) throw new Error(json.error||'Failed');
-    sheetData.status='approved'; sheetData.approved_by_name=name; sheetData.approved_at=new Date().toISOString(); sheetData.dep_signature=sigData;
-    const depImg=document.getElementById('dep-sig'); depImg.src=sigData; depImg.style.display='block';
+    const res=await fetch('/.netlify/functions/approve-timesheet',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:sheetData.id,supervisor_name:name,supervisor_email:'',dep_signature:sigData})});
+    const json=await res.json();
+    if(!json.success)throw new Error(json.error||'Failed');
+    sheetData.status='approved';sheetData.approved_by_name=name;sheetData.approved_at=new Date().toISOString();sheetData.dep_signature=sigData;
+    const depImg=document.getElementById('dep-sig');depImg.src=sigData;depImg.style.display='block';
     document.getElementById('dep-sig-placeholder').style.display='none';
-    const b=document.getElementById('banner-approved'); b.textContent=`✓ Approved by ${name} on ${new Date().toLocaleString()}`; b.style.display='block';
+    const b=document.getElementById('banner-approved');b.textContent=`✓ Approved by ${name} on ${new Date().toLocaleString()}`;b.style.display='block';
     document.getElementById('sheet-title').innerHTML=`${sheetData.employee_name} — ${sheetData.month} ${sheetData.year} ${getBadge('approved')}`;
-    buildActionBar(); closeSignModal();
-    confirmBtn.disabled=false; confirmBtn.textContent='Confirm & Approve';
-  } catch(err) { confirmBtn.disabled=false; confirmBtn.textContent='Confirm & Approve'; alert('Approval failed: '+err.message); }
+    buildActionBar();closeSignModal();
+    confirmBtn.disabled=false;confirmBtn.textContent='Confirm & Approve';
+  } catch(err){confirmBtn.disabled=false;confirmBtn.textContent='Confirm & Approve';alert('Approval failed: '+err.message);}
 }
 
 async function unapproveSheet() {
-  if (!confirm('Unapprove this timesheet? It will return to pending status.')) return;
+  if(!confirm('Unapprove this timesheet? It will return to pending status.'))return;
   try {
-    const res = await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${sheetData.id}`, {
-      method:'PATCH',
-      headers:{'Content-Type':'application/json','apikey':SERVICE_KEY,'Authorization':'Bearer '+SERVICE_KEY,'Prefer':'return=minimal'},
-      body: JSON.stringify({ status:'pending', approved_at:null, approved_by_name:null, approved_by_email:null, dep_signature:null, reviewed_by_name:null, reviewed_at:null })
-    });
-    if (!res.ok) throw new Error('Failed');
-    sheetData.status='pending'; sheetData.dep_signature=null; sheetData.approved_by_name=null; sheetData.reviewed_by_name=null;
+    const res=await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${sheetData.id}`,{method:'PATCH',headers:{'Content-Type':'application/json','apikey':SERVICE_KEY,'Authorization':'Bearer '+SERVICE_KEY,'Prefer':'return=minimal'},body:JSON.stringify({status:'pending',approved_at:null,approved_by_name:null,approved_by_email:null,dep_signature:null,reviewed_by_name:null,reviewed_at:null})});
+    if(!res.ok)throw new Error('Failed');
+    sheetData.status='pending';sheetData.dep_signature=null;sheetData.approved_by_name=null;sheetData.reviewed_by_name=null;
     document.getElementById('banner-reviewed').style.display='none';
     document.getElementById('banner-approved').style.display='none';
-    const depImg=document.getElementById('dep-sig'); depImg.src=''; depImg.style.display='none';
+    const depImg=document.getElementById('dep-sig');depImg.src='';depImg.style.display='none';
     document.getElementById('dep-sig-placeholder').style.display='block';
     document.getElementById('sheet-title').innerHTML=`${sheetData.employee_name} — ${sheetData.month} ${sheetData.year} ${getBadge('pending')}`;
     buildActionBar();
-  } catch(err) { alert('Failed: '+err.message); }
+  } catch(err){alert('Failed: '+err.message);}
 }
 
 async function deleteSheet() {
-  if (!confirm(`Delete this timesheet for ${sheetData.employee_name}? This cannot be undone.`)) return;
+  if(!confirm(`Delete this timesheet for ${sheetData.employee_name}? This cannot be undone.`))return;
   try {
-    const res = await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${sheetData.id}`, {
-      method:'DELETE', headers:{'apikey':SERVICE_KEY,'Authorization':'Bearer '+SERVICE_KEY}
-    });
-    if (!res.ok) throw new Error('Failed');
+    const res=await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${sheetData.id}`,{method:'DELETE',headers:{'apikey':SERVICE_KEY,'Authorization':'Bearer '+SERVICE_KEY}});
+    if(!res.ok)throw new Error('Failed');
     alert('Timesheet deleted.');
-    window.location.href='/validate.html';
-  } catch(err) { alert('Delete failed: '+err.message); }
+    goBack();
+  } catch(err){alert('Delete failed: '+err.message);}
 }
 
-function getSigDimensions(src,maxW,maxH) {
-  return new Promise(resolve => {
-    const img=new Image();
-    img.onload=()=>{ const ratio=img.naturalHeight/img.naturalWidth; let w=Math.min(img.naturalWidth,maxW),h=w*ratio; if(h>maxH){h=maxH;w=h/ratio;} resolve({w,h}); };
-    img.onerror=()=>resolve({w:maxW*0.6,h:maxH*0.6});
-    img.src=src;
-  });
-}
+function getSigDimensions(src,maxW,maxH){return new Promise(resolve=>{const img=new Image();img.onload=()=>{const ratio=img.naturalHeight/img.naturalWidth;let w=Math.min(img.naturalWidth,maxW),h=w*ratio;if(h>maxH){h=maxH;w=h/ratio;}resolve({w,h});};img.onerror=()=>resolve({w:maxW*0.6,h:maxH*0.6});img.src=src;});}
 
 async function buildPDF() {
-  const {jsPDF}=window.jspdf;
-  const d=sheetData;
-  const doc=new jsPDF({orientation:'portrait',unit:'pt',format:'letter'});
-  const ml=36,mr=576,pw=mr-ml; let y=36;
-  doc.setFont('helvetica','bold'); doc.setFontSize(14.5);
-  doc.text("Yalobusha County Sheriff's Department",ml,y); y+=17;
-  doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
-  doc.text('Time and Attendance',ml,y); y+=21;
+  const{jsPDF}=window.jspdf;const d=sheetData;const doc=new jsPDF({orientation:'portrait',unit:'pt',format:'letter'});const ml=36,mr=576,pw=mr-ml;let y=36;
+  doc.setFont('helvetica','bold');doc.setFontSize(14.5);doc.text("Yalobusha County Sheriff's Department",ml,y);y+=17;
+  doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.text('Time and Attendance',ml,y);y+=21;
   const colW=pw/2;
-  [[['Name:',d.employee_name],['Last 4 of Social:',d.ssn_last4]],[['Employment Status:',d.employment_status]],[['Current Month:',d.month],['Current Year:',d.year]]].forEach(row=>{
-    row.forEach((item,i)=>{ const x=ml+i*colW; doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.text(item[0],x,y); const lw=doc.getTextWidth(item[0])+4; doc.setFont('helvetica','normal'); doc.text(item[1]||'',x+lw,y); doc.line(x+lw,y+1,x+colW-6,y+1); }); y+=15;
-  }); y+=6;
+  [[['Name:',d.employee_name],['Last 4 of Social:',d.ssn_last4]],[['Employment Status:',d.employment_status]],[['Current Month:',d.month],['Current Year:',d.year]]].forEach(row=>{row.forEach((item,i)=>{const x=ml+i*colW;doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.text(item[0],x,y);const lw=doc.getTextWidth(item[0])+4;doc.setFont('helvetica','normal');doc.text(item[1]||'',x+lw,y);doc.line(x+lw,y+1,x+colW-6,y+1);});y+=15;});y+=6;
   const cols=[{label:'Day',w:26},{label:'Start',w:52},{label:'End',w:52},{label:'Total Hrs',w:54},{label:'Comp Hrs',w:54},{label:'Sick Hrs',w:54},{label:'Notes',w:pw-26-52-52-54-54-54}];
   const rowH=13.5,hdrH=16.5;
-  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setFillColor(240,240,240);
-  doc.rect(ml,y,pw,hdrH,'FD'); let cx=ml;
+  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setFillColor(240,240,240);doc.rect(ml,y,pw,hdrH,'FD');let cx=ml;
   cols.forEach(col=>{doc.text(col.label,cx+2,y+11.5);cx+=col.w;if(cx<mr)doc.line(cx,y,cx,y+hdrH);});
-  y+=hdrH; doc.setFont('helvetica','normal'); doc.setFontSize(8);
-  const allRows=[];
-  for(let day=1;day<=31;day++){ const found=(d.rows||[]).find(r=>parseInt(r.day)===day); allRows.push(found||{day:String(day),start:'',end:'',total:'',comp:'',sick:'',notes:''}); }
-  allRows.forEach(row=>{ const vals=[row.day,row.start,row.end,row.total,row.comp,row.sick,row.notes]; doc.rect(ml,y,pw,rowH); cx=ml; cols.forEach((col,i)=>{if(vals[i])doc.text(String(vals[i]),cx+2,y+9.5);cx+=col.w;if(cx<mr)doc.line(cx,y,cx,y+rowH);}); y+=rowH; });
-  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setFillColor(240,240,240);
-  doc.rect(ml,y,pw,rowH,'FD');
-  const totW=cols[0].w+cols[1].w+cols[2].w;
-  doc.text('Total Hours:',ml+totW-doc.getTextWidth('Total Hours:')-4,y+9.5); cx=ml+totW;
+  y+=hdrH;doc.setFont('helvetica','normal');doc.setFontSize(8);
+  const allRows=[];for(let day=1;day<=31;day++){const found=(d.rows||[]).find(r=>parseInt(r.day)===day);allRows.push(found||{day:String(day),start:'',end:'',total:'',comp:'',sick:'',notes:''});}
+  allRows.forEach(row=>{const vals=[row.day,row.start,row.end,row.total,row.comp,row.sick,row.notes];doc.rect(ml,y,pw,rowH);cx=ml;cols.forEach((col,i)=>{if(vals[i])doc.text(String(vals[i]),cx+2,y+9.5);cx+=col.w;if(cx<mr)doc.line(cx,y,cx,y+rowH);});y+=rowH;});
+  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setFillColor(240,240,240);doc.rect(ml,y,pw,rowH,'FD');
+  const totW=cols[0].w+cols[1].w+cols[2].w;doc.text('Total Hours:',ml+totW-doc.getTextWidth('Total Hours:')-4,y+9.5);cx=ml+totW;
   [d.total_hours,d.comp_hours,d.sick_hours].forEach((val,i)=>{if(val)doc.text(val,cx+2,y+9.5);cx+=cols[3+i].w;if(cx<mr)doc.line(cx,y,cx,y+rowH);});
   y+=rowH+20;
   const sigW=(pw-32)/2,sigH=44;
-  doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
-  doc.text('Employee Signature:',ml,y); doc.text('Chief Deputy Signature:',ml+sigW+32,y); y+=6;
-  if(d.emp_signature&&d.emp_signature.startsWith('data:image')){ try{const dims=await getSigDimensions(d.emp_signature,sigW-8,sigH-8);doc.addImage(d.emp_signature,'PNG',ml+4,y+(sigH-dims.h)/2,dims.w,dims.h);}catch(e){} }
+  doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.text('Employee Signature:',ml,y);doc.text('Chief Deputy Signature:',ml+sigW+32,y);y+=6;
+  if(d.emp_signature&&d.emp_signature.startsWith('data:image')){try{const dims=await getSigDimensions(d.emp_signature,sigW-8,sigH-8);doc.addImage(d.emp_signature,'PNG',ml+4,y+(sigH-dims.h)/2,dims.w,dims.h);}catch(e){}}
   doc.line(ml,y+sigH,ml+sigW,y+sigH);
-  if(d.dep_signature&&d.dep_signature.startsWith('data:image')){ try{const dims=await getSigDimensions(d.dep_signature,sigW-8,sigH-8);doc.addImage(d.dep_signature,'PNG',ml+sigW+36,y+(sigH-dims.h)/2,dims.w,dims.h);}catch(e){} }
+  if(d.dep_signature&&d.dep_signature.startsWith('data:image')){try{const dims=await getSigDimensions(d.dep_signature,sigW-8,sigH-8);doc.addImage(d.dep_signature,'PNG',ml+sigW+36,y+(sigH-dims.h)/2,dims.w,dims.h);}catch(e){}}
   doc.line(ml+sigW+32,y+sigH,ml+sigW+32+sigW,y+sigH);
-  doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
-  const depX=ml+sigW+32; let depTextY=y+sigH+10;
-  if(d.reviewed_by_name){ doc.setTextColor(30,80,160); doc.text(`Validated by ${d.reviewed_by_name}`,depX,depTextY); depTextY+=10; doc.text(`on ${new Date(d.reviewed_at).toLocaleString()}`,depX,depTextY); depTextY+=12; }
-  if(d.status==='approved'&&d.approved_by_name){ doc.setTextColor(30,122,60); doc.setFont('helvetica','italic'); doc.text(`Approved by ${d.approved_by_name}`,depX,depTextY); depTextY+=10; doc.text(`on ${new Date(d.approved_at).toLocaleString()}`,depX,depTextY); }
+  doc.setFont('helvetica','normal');doc.setFontSize(8.5);
+  const depX=ml+sigW+32;let depTextY=y+sigH+10;
+  if(d.reviewed_by_name){doc.setTextColor(30,80,160);doc.text(`Validated by ${d.reviewed_by_name}`,depX,depTextY);depTextY+=10;doc.text(`on ${new Date(d.reviewed_at).toLocaleString()}`,depX,depTextY);depTextY+=12;}
+  if(d.status==='approved'&&d.approved_by_name){doc.setTextColor(30,122,60);doc.setFont('helvetica','italic');doc.text(`Approved by ${d.approved_by_name}`,depX,depTextY);depTextY+=10;doc.text(`on ${new Date(d.approved_at).toLocaleString()}`,depX,depTextY);}
   doc.setTextColor(0,0,0);
   return doc;
 }
-async function downloadPDF() { const doc=await buildPDF(); doc.save(`${sheetData.employee_name.replace(/\s+/g,'_')}_${sheetData.month}_${sheetData.year}_Timesheet.pdf`); }
-async function printSheet() { const doc=await buildPDF(); const blob=doc.output('blob'); const url=URL.createObjectURL(blob); const win=window.open(url); if(win) win.onload=()=>{win.focus();win.print();}; }
+async function downloadPDF(){const doc=await buildPDF();doc.save(`${sheetData.employee_name.replace(/\s+/g,'_')}_${sheetData.month}_${sheetData.year}_Timesheet.pdf`);}
+async function printSheet(){const doc=await buildPDF();const blob=doc.output('blob');const url=URL.createObjectURL(blob);const win=window.open(url);if(win)win.onload=()=>{win.focus();win.print();};}
 
 init();
 </script>
