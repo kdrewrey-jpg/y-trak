@@ -32,9 +32,12 @@
 <script>
 function checkPin() {
   const val = document.getElementById('pin').value.trim();
-  if (val === '11803') {
-    sessionStorage.setItem('ytrak-staff', 'supervisor');
+  if (val === '38655') {
+    sessionStorage.setItem('ytrak-staff', 'validator');
     window.location.href = '/validate.html';
+  } else if (val === '11803') {
+    sessionStorage.setItem('ytrak-staff', 'supervisor');
+    window.location.href = '/dashboard.html';
   } else if (val === '38922') {
     sessionStorage.setItem('ytrak-staff', 'payroll');
     window.location.href = '/payroll.html';
@@ -46,9 +49,9 @@ function checkPin() {
 }
 document.addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
 
-/* If already authenticated redirect straight through */
 const role = sessionStorage.getItem('ytrak-staff');
-if (role === 'supervisor') window.location.href = '/validate.html';
+if (role === 'validator')  window.location.href = '/validate.html';
+if (role === 'supervisor') window.location.href = '/dashboard.html';
 if (role === 'payroll')    window.location.href = '/payroll.html';
 </script>
 </body>
