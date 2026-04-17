@@ -3,87 +3,53 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Supervisor Login — Y-TRAK</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<title>Y-TRAK — Staff Login</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; }
   body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-  .card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 36px 32px; width: 100%; max-width: 400px; }
-  h1 { font-size: 20px; font-weight: bold; margin: 0 0 4px; text-align: center; color: #111; }
-  .dept { font-size: 13px; color: #888; text-align: center; margin: 0 0 4px; }
-  .tagline { font-size: 13px; color: #666; text-align: center; margin: 0 0 28px; }
-  .badge { display: block; width: fit-content; margin: 0 auto 20px; background: #1a3a6b; color: #fff; font-size: 11px; padding: 3px 12px; border-radius: 20px; }
-  .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
-  label { font-size: 12px; color: #555; font-weight: bold; text-transform: uppercase; letter-spacing: 0.04em; }
-  input { background: #f7f7f7; border: 1px solid #ccc; border-radius: 7px; padding: 10px 12px; font-size: 15px; color: #111; width: 100%; font-family: Arial, sans-serif; }
-  input:focus { outline: none; border-color: #1a5dc8; background: #fff; }
-  .btn { width: 100%; padding: 12px; font-size: 15px; font-weight: bold; border: none; border-radius: 7px; background: #1a5dc8; color: #fff; cursor: pointer; margin-top: 8px; font-family: Arial, sans-serif; }
-  .btn:hover { background: #154fa8; }
-  .btn:disabled { background: #aaa; cursor: default; }
-  .error { background: #fff0f0; border: 1px solid #f0b0b0; border-radius: 7px; padding: 10px 14px; font-size: 13px; color: #a00; margin-top: 12px; display: none; }
+  .card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 36px 32px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+  .logo { font-size: 28px; font-weight: 900; color: #1a3a6b; letter-spacing: 2px; margin: 0 0 4px; }
+  .dept { font-size: 12px; color: #888; margin: 0 0 6px; }
+  .tag  { font-size: 12px; color: #666; margin: 0 0 24px; }
+  .badge { display: inline-block; background: #1a3a6b; color: #fff; font-size: 11px; padding: 3px 14px; border-radius: 20px; margin-bottom: 28px; }
+  .pin-input { width: 100%; padding: 14px; font-size: 28px; text-align: center; letter-spacing: 12px; border: 2px solid #ddd; border-radius: 10px; background: #f7f7f7; outline: none; font-family: Arial, sans-serif; }
+  .pin-input:focus { border-color: #1a5dc8; background: #fff; }
+  .pin-btn { width: 100%; margin-top: 14px; padding: 13px; font-size: 15px; font-weight: bold; background: #1a5dc8; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-family: Arial, sans-serif; }
+  .pin-btn:hover { background: #154fa8; }
+  .pin-error { background: #fff0f0; border: 1px solid #f0b0b0; border-radius: 8px; padding: 9px 14px; font-size: 13px; color: #a00; margin-top: 12px; display: none; }
 </style>
 </head>
 <body>
 <div class="card">
+  <p class="logo">Y-TRAK</p>
   <p class="dept">Yalobusha County Sheriff's Department</p>
-  <h1>Y-TRAK</h1>
-  <p class="tagline">Supervisor Portal</p>
-  <span class="badge">Authorized Personnel Only</span>
-
-  <div class="field">
-    <label>Email address</label>
-    <input type="email" id="email" placeholder="your@email.com" autocomplete="email">
-  </div>
-  <div class="field">
-    <label>Password</label>
-    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
-  </div>
-  <button class="btn" id="login-btn" onclick="doLogin()">Sign in</button>
-  <div class="error" id="error-msg"></div>
+  <p class="tag">Staff Portal</p>
+  <span class="badge">Authorized Personnel Only</span><br><br>
+  <input type="password" class="pin-input" id="pin" maxlength="10" inputmode="numeric" placeholder="•••••" onkeydown="if(event.key==='Enter') checkPin()">
+  <button class="pin-btn" onclick="checkPin()">Enter</button>
+  <div class="pin-error" id="pin-error">Incorrect PIN. Please try again.</div>
 </div>
-
 <script>
-const sb = supabase.createClient(
-  'https://kwgfonwgeoievgxwvxlg.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3Z2ZvbndnZW9pZXZneHd2eGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4Mzk4MDQsImV4cCI6MjA5MTQxNTgwNH0.KrH-loytrritpSgy6MVBmT0KyyodDp27ZLSATm1dGsM'
-);
-
-sb.auth.getSession().then(({ data }) => {
-  if (data.session) redirectByRole(data.session.user.id);
-});
-
-async function doLogin() {
-  const email    = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
-  const btn      = document.getElementById('login-btn');
-  const err      = document.getElementById('error-msg');
-  err.style.display = 'none';
-  if (!email || !password) { showErr('Please enter your email and password.'); return; }
-  btn.disabled = true; btn.textContent = 'Signing in…';
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) {
-    showErr('Invalid email or password. Please try again.');
-    btn.disabled = false; btn.textContent = 'Sign in';
-    return;
+function checkPin() {
+  const val = document.getElementById('pin').value.trim();
+  if (val === '11803') {
+    sessionStorage.setItem('ytrak-staff', 'supervisor');
+    window.location.href = '/validate.html';
+  } else if (val === '38922') {
+    sessionStorage.setItem('ytrak-staff', 'payroll');
+    window.location.href = '/payroll.html';
+  } else {
+    document.getElementById('pin-error').style.display = 'block';
+    document.getElementById('pin').value = '';
+    document.getElementById('pin').focus();
   }
-  await redirectByRole(data.user.id);
-  btn.disabled = false; btn.textContent = 'Sign in';
 }
+document.addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
 
-async function redirectByRole(userId) {
-  const { data: profile } = await sb.from('supervisors').select('role').eq('id', userId).single();
-  if (!profile) { showErr('Your account does not have portal access.'); await sb.auth.signOut(); return; }
-  if (profile.role === 'reviewer')  { window.location.href = '/validate.html';  return; }
-  if (profile.role === 'payroll')   { window.location.href = '/payroll.html';   return; }
-  window.location.href = '/dashboard.html';
-}
-
-function showErr(msg) {
-  const el = document.getElementById('error-msg');
-  el.textContent = msg; el.style.display = 'block';
-}
-
-document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+/* If already authenticated redirect straight through */
+const role = sessionStorage.getItem('ytrak-staff');
+if (role === 'supervisor') window.location.href = '/validate.html';
+if (role === 'payroll')    window.location.href = '/payroll.html';
 </script>
 </body>
 </html>
