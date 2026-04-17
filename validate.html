@@ -8,54 +8,46 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; }
   body { font-family: Arial, sans-serif; margin: 0; padding: 0; transition: background 0.2s, color 0.2s; }
-
-  /* ── Light mode ── */
   body.light { background: #f4f6fa; color: #111827; }
+  body.dark  { background: #0f1117; color: #e8eaf0; }
   body.light .topbar { background: #1a3a6b; color: #fff; }
+  body.dark  .topbar { background: #0a1628; color: #e8eaf0; }
   body.light .card { background: #fff; border: 0.5px solid rgba(0,0,0,0.1); }
+  body.dark  .card { background: #1a1d23; border: 0.5px solid rgba(255,255,255,0.08); }
   body.light .stat-card { background: #f4f6fa; border: 0.5px solid rgba(0,0,0,0.08); }
+  body.dark  .stat-card { background: #22262e; border: 0.5px solid rgba(255,255,255,0.08); }
   body.light .tb-btn { background: #f4f6fa; border: 0.5px solid rgba(0,0,0,0.15); color: #111; }
+  body.dark  .tb-btn { background: #22262e; border: 0.5px solid rgba(255,255,255,0.1); color: #e8eaf0; }
   body.light .tb-btn:hover { background: #e8edf5; }
+  body.dark  .tb-btn:hover { background: #2a2f38; }
   body.light .tbl-outer { border: 1px solid rgba(0,0,0,0.1); }
+  body.dark  .tbl-outer { border: 1px solid rgba(255,255,255,0.08); }
   body.light thead { background: #1a3a6b; }
+  body.dark  thead { background: #0a1628; }
   body.light thead th { color: #c8d8f0; border-right: 1px solid rgba(255,255,255,0.08); }
+  body.dark  thead th { color: #8aafd4; border-right: 1px solid rgba(255,255,255,0.06); }
   body.light tbody tr:nth-child(even) { background: #f8fafc; }
+  body.dark  tbody tr:nth-child(even) { background: #1e2229; }
   body.light tbody tr:hover { background: #dbeafe !important; }
+  body.dark  tbody tr:hover { background: #1e3a5f !important; }
   body.light tbody td { border-right: 1px solid rgba(0,0,0,0.07); border-bottom: 1px solid rgba(0,0,0,0.07); color: #111; }
-  body.light .tbl-footer { background: #f4f6fa; border-top: 1px solid rgba(0,0,0,0.08); color: #6b7280; }
+  body.dark  tbody td { border-right: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); color: #e8eaf0; }
+  body.light .tbl-footer { background: #f4f6fa; border-top: 1px solid rgba(0,0,0,0.08); }
+  body.dark  .tbl-footer { background: #1a1d23; border-top: 1px solid rgba(255,255,255,0.08); }
   body.light .filter-grp select { background: #fff; border: 0.5px solid rgba(0,0,0,0.15); color: #111; }
+  body.dark  .filter-grp select { background: #22262e; border: 0.5px solid rgba(255,255,255,0.1); color: #e8eaf0; }
   body.light .mode-btn { background: #f4f6fa; border: 0.5px solid rgba(0,0,0,0.15); color: #555; }
+  body.dark  .mode-btn { background: #22262e; border: 0.5px solid rgba(255,255,255,0.1); color: #9aa3b2; }
   body.light .mode-btn:hover { background: #e8edf5; }
+  body.dark  .mode-btn:hover { background: #2a2f38; }
   body.light .text2 { color: #6b7280; }
-
-  /* ── Dark mode ── */
-  body.dark { background: #0f1117; color: #e8eaf0; }
-  body.dark .topbar { background: #0a1628; color: #e8eaf0; }
-  body.dark .card { background: #1a1d23; border: 0.5px solid rgba(255,255,255,0.08); }
-  body.dark .stat-card { background: #22262e; border: 0.5px solid rgba(255,255,255,0.08); }
-  body.dark .tb-btn { background: #22262e; border: 0.5px solid rgba(255,255,255,0.1); color: #e8eaf0; }
-  body.dark .tb-btn:hover { background: #2a2f38; }
-  body.dark .tbl-outer { border: 1px solid rgba(255,255,255,0.08); }
-  body.dark thead { background: #0a1628; }
-  body.dark thead th { color: #8aafd4; border-right: 1px solid rgba(255,255,255,0.06); }
-  body.dark tbody tr:nth-child(even) { background: #1e2229; }
-  body.dark tbody tr:hover { background: #1e3a5f !important; }
-  body.dark tbody td { border-right: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); color: #e8eaf0; }
-  body.dark .tbl-footer { background: #1a1d23; border-top: 1px solid rgba(255,255,255,0.08); color: #9aa3b2; }
-  body.dark .filter-grp select { background: #22262e; border: 0.5px solid rgba(255,255,255,0.1); color: #e8eaf0; }
-  body.dark .mode-btn { background: #22262e; border: 0.5px solid rgba(255,255,255,0.1); color: #9aa3b2; }
-  body.dark .mode-btn:hover { background: #2a2f38; }
-  body.dark .text2 { color: #9aa3b2; }
-
-  /* ── Layout ── */
+  body.dark  .text2 { color: #9aa3b2; }
   .topbar { padding: 13px 24px; display: flex; align-items: center; justify-content: space-between; }
   .topbar h1 { font-size: 16px; font-weight: bold; margin: 0 0 2px; }
   .topbar p { font-size: 12px; opacity: 0.75; margin: 0; }
   .sign-out { font-size: 13px; color: #aac4f0; cursor: pointer; background: none; border: none; font-family: Arial, sans-serif; text-decoration: underline; }
   .container { max-width: 1100px; margin: 0 auto; padding: 20px 16px; }
   .card { border-radius: 12px; padding: 20px; margin-bottom: 16px; }
-
-  /* ── Top bar inside card ── */
   .inner-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
   .page-title { font-size: 15px; font-weight: 500; }
   .page-sub { font-size: 11px; margin-top: 2px; }
@@ -64,8 +56,6 @@
   .filter-grp label { font-size: 11px; }
   .filter-grp select { font-size: 12px; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-family: Arial, sans-serif; }
   .mode-btn { font-size: 11px; padding: 4px 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap; font-family: Arial, sans-serif; }
-
-  /* ── Stats ── */
   .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 14px; }
   .stat-card { border-radius: 10px; padding: 10px 14px; }
   .stat-num { font-size: 22px; font-weight: 500; }
@@ -73,8 +63,6 @@
   .num-blue  { color: #3b82f6; }
   .num-green { color: #10b981; }
   .num-amber { color: #f59e0b; }
-
-  /* ── Toolbar ── */
   .toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
   .tb-btn { font-size: 12px; font-weight: 500; padding: 7px 13px; border-radius: 7px; cursor: pointer; display: flex; align-items: center; gap: 5px; white-space: nowrap; font-family: Arial, sans-serif; }
   .tb-btn.primary { background: #1a3a6b !important; color: #fff !important; border-color: #1a3a6b !important; }
@@ -82,8 +70,6 @@
   .tb-btn.success { background: #0f6e56 !important; color: #fff !important; border-color: #0f6e56 !important; }
   .tb-btn.success:hover { background: #085041 !important; }
   .cnt { background: rgba(255,255,255,0.25); color: #fff; font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 8px; margin-left: 2px; }
-
-  /* ── Table ── */
   .tbl-outer { border-radius: 10px; overflow: hidden; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
   thead th { padding: 10px 10px; text-align: left; font-weight: 500; font-size: 11px; white-space: nowrap; overflow: hidden; }
@@ -109,15 +95,11 @@
     <h1>Y-TRAK — Validation Portal</h1>
     <p>Yalobusha County Sheriff's Department</p>
   </div>
-  <div style="display:flex;align-items:center;gap:16px;">
-    <span style="font-size:13px;opacity:0.85;" id="user-name"></span>
-    <button class="sign-out" onclick="signOut()">Sign out</button>
-  </div>
+  <button class="sign-out" onclick="signOut()">Sign out</button>
 </div>
 
 <div class="container">
   <div class="card">
-
     <div class="inner-top">
       <div>
         <div class="page-title">Validation Spreadsheet</div>
@@ -189,30 +171,24 @@
         <span class="text2" id="sel-label">0 selected</span>
       </div>
     </div>
-
   </div>
 </div>
 
 <script>
+if (!sessionStorage.getItem('ytrak-staff')) window.location.href = '/supervisor.html';
+
 const sb = supabase.createClient(
   'https://kwgfonwgeoievgxwvxlg.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3Z2ZvbndnZW9pZXZneHd2eGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4Mzk4MDQsImV4cCI6MjA5MTQxNTgwNH0.KrH-loytrritpSgy6MVBmT0KyyodDp27ZLSATm1dGsM'
 );
 const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3Z2ZvbndnZW9pZXZneHd2eGxnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTgzOTgwNCwiZXhwIjoyMDkxNDE1ODA0fQ.yzHKNyoZ85hj2xxjW_byLStr-O9FOCPna9OVXvzthWI';
 
-let allSheets = [];
-let filtered  = [];
-let currentSupervisor = null;
+let allSheets = [], filtered = [];
 let isDark = false;
 const sel = new Set();
 
 async function init() {
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) { window.location.href = '/supervisor.html'; return; }
-  const { data: profile } = await sb.from('supervisors').select('*').eq('id', session.user.id).single();
-  if (!profile || profile.role !== 'reviewer') { window.location.href = '/supervisor.html'; return; }
-  currentSupervisor = profile;
-  document.getElementById('user-name').textContent = profile.name || session.user.email;
+  await sb.auth.signOut();
   await loadSheets();
 }
 
@@ -230,8 +206,8 @@ function setDefaultFilter() {
   const year = String(now.getFullYear());
   const mSel = document.getElementById('f-month');
   const ySel = document.getElementById('f-year');
-  for (let i = 0; i < mSel.options.length; i++) { if (mSel.options[i].value === monthName) { mSel.selectedIndex = i; break; } }
-  for (let i = 0; i < ySel.options.length; i++) { if (ySel.options[i].value === year) { ySel.selectedIndex = i; break; } }
+  for (let i = 0; i < mSel.options.length; i++) { if (mSel.options[i].text === monthName) { mSel.selectedIndex = i; break; } }
+  for (let i = 0; i < ySel.options.length; i++) { if (ySel.options[i].text === year) { ySel.selectedIndex = i; break; } }
 }
 
 function applyFilter() {
@@ -245,12 +221,6 @@ function applyFilter() {
   sel.clear();
   document.getElementById('chk-all').checked = false;
   renderTable();
-  updatePeriodLabel();
-}
-
-function updatePeriodLabel() {
-  const fm = document.getElementById('f-month').value;
-  const fy = document.getElementById('f-year').value;
   const label = [fm, fy].filter(Boolean).join(' ') || 'All periods';
   document.getElementById('period-label').textContent = label;
 }
@@ -262,7 +232,7 @@ function badge(s) {
 }
 
 function hrsCell(v, cls) {
-  if (!v || v === '0.00' || v === '0:00') return `<span class="text2">${v||'—'}</span>`;
+  if (!v || v === '0.00') return `<span class="text2">—</span>`;
   return `<span class="${cls}">${v}</span>`;
 }
 
@@ -270,8 +240,7 @@ function renderTable() {
   const tbody = document.getElementById('tbl-body');
   if (filtered.length === 0) {
     tbody.innerHTML = '<tr><td colspan="9" class="empty text2">No timesheets found for this period.</td></tr>';
-    updateStats();
-    return;
+    updateStats(); return;
   }
   tbody.innerHTML = filtered.map(s => {
     const date = s.submitted_at ? new Date(s.submitted_at).toLocaleDateString() : '—';
@@ -287,27 +256,20 @@ function renderTable() {
       <td>${hrsCell(s.sick_hours,'hrs-sick')}</td>
       <td class="text2">${date}</td>
       <td class="text2">${s.employment_status||'—'}</td>
-      <td class="text2">${s.month||''} ${s.year||''}</td>
+      <td class="text2">${(s.month||'')} ${(s.year||'')}</td>
     </tr>`;
   }).join('');
   updateStats();
 }
 
 function updateStats() {
-  const pending  = filtered.filter(s => s.status === 'pending').length;
-  const valCnt   = filtered.filter(s => s.status === 'reviewed' || s.status === 'approved').length;
-  let totalMins  = 0;
-  filtered.forEach(s => {
-    if (s.total_hours) {
-      const parts = s.total_hours.split('.');
-      totalMins += (parseFloat(parts[0])||0) * 60;
-    }
-  });
-  const totalHrsDisplay = filtered.length > 0 ? filtered.reduce((acc, s) => acc + (parseFloat(s.total_hours)||0), 0).toFixed(2) : '0.00';
+  const pending = filtered.filter(s => s.status === 'pending').length;
+  const valCnt  = filtered.filter(s => s.status === 'reviewed' || s.status === 'approved').length;
+  const total   = filtered.reduce((acc, s) => acc + (parseFloat(s.total_hours)||0), 0);
   document.getElementById('s-total').textContent   = filtered.length;
   document.getElementById('s-pending').textContent = pending;
   document.getElementById('s-val').textContent     = valCnt;
-  document.getElementById('s-hrs').textContent     = totalHrsDisplay;
+  document.getElementById('s-hrs').textContent     = total.toFixed(2);
   document.getElementById('sel-count').textContent = sel.size;
   document.getElementById('sel-label').textContent = `${sel.size} of ${pending} selected`;
 }
@@ -319,49 +281,33 @@ function toggleAll(cb) {
   renderTable();
 }
 
-function selectAll() {
-  filtered.forEach(s => { if (s.status === 'pending') sel.add(s.id); });
-  renderTable();
-}
+function selectAll() { filtered.forEach(s => { if (s.status === 'pending') sel.add(s.id); }); renderTable(); }
 
-function clearAll() {
-  sel.clear();
-  document.getElementById('chk-all').checked = false;
-  renderTable();
-}
+function clearAll() { sel.clear(); document.getElementById('chk-all').checked = false; renderTable(); }
 
 async function submitValidations() {
   if (sel.size === 0) { alert('Please select at least one timesheet to validate.'); return; }
-  if (!confirm(`Validate ${sel.size} timesheet(s) for ${currentSupervisor.name}? They will be moved to the Chief's approval queue.`)) return;
-
-  const now  = new Date().toISOString();
-  const ids  = Array.from(sel);
+  if (!confirm(`Validate ${sel.size} timesheet(s)? They will be moved to the approval queue.`)) return;
+  const now = new Date().toISOString();
+  const ids = Array.from(sel);
   let success = 0, failed = 0;
-
   for (const id of ids) {
     const res = await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'apikey': SERVICE_KEY, 'Authorization': 'Bearer ' + SERVICE_KEY, 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ status: 'reviewed', reviewed_by_name: currentSupervisor.name, reviewed_at: now })
+      body: JSON.stringify({ status: 'reviewed', reviewed_by_name: 'Reviewer', reviewed_at: now })
     });
     if (res.ok) success++; else failed++;
   }
-
-  if (failed > 0) { alert(`${success} validated successfully. ${failed} failed — please try again.`); }
-  else { alert(`${success} timesheet(s) validated successfully and moved to the Chief's queue!`); }
-
+  if (failed > 0) alert(`${success} validated. ${failed} failed — please try again.`);
+  else alert(`${success} timesheet(s) validated and moved to the approval queue!`);
   sel.clear();
   await loadSheets();
 }
 
-function openSheet(id) {
-  window.location.href = `/review.html?id=${id}`;
-}
+function openSheet(id) { window.location.href = `/review.html?id=${id}`; }
 
-async function signOut() {
-  await sb.auth.signOut();
-  window.location.href = '/supervisor.html';
-}
+function signOut() { sessionStorage.removeItem('ytrak-staff'); window.location.href = '/supervisor.html'; }
 
 function toggleMode() {
   isDark = !isDark;
