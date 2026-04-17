@@ -3,40 +3,60 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Y-TRAK — Test Version</title>
+<title>Yalobusha County Sheriff's Department — Timecard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 16px; color: #111; }
+  body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 16px; color: #111; }
 
   /* PIN */
-  .pin-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: -16px; background: #f4f4f4; }
-  .pin-card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 40px 32px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+  .pin-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: -16px; background: #f0f2f5; }
+  .pin-card { background: #fff; border: 1px solid #ddd; border-radius: 14px; padding: 40px 32px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
   .pin-logo { font-size: 28px; font-weight: 900; color: #1a3a6b; letter-spacing: 2px; margin: 0 0 4px; }
   .pin-dept { font-size: 12px; color: #888; margin: 0 0 24px; }
   .pin-badge { display: inline-block; background: #1a3a6b; color: #fff; font-size: 11px; padding: 3px 14px; border-radius: 20px; margin-bottom: 24px; }
-  .pin-input { width: 100%; padding: 14px; font-size: 24px; text-align: center; letter-spacing: 10px; border: 2px solid #ddd; border-radius: 10px; background: #f7f7f7; outline: none; font-family: Arial, sans-serif; }
+  .pin-input { width: 100%; padding: 14px; font-size: 24px; text-align: center; letter-spacing: 10px; border: 2px solid #ddd; border-radius: 10px; background: #f7f8fa; outline: none; font-family: Arial, sans-serif; }
   .pin-input:focus { border-color: #1a5dc8; background: #fff; }
   .pin-btn { width: 100%; margin-top: 14px; padding: 13px; font-size: 15px; font-weight: bold; background: #1a5dc8; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-family: Arial, sans-serif; }
   .pin-btn:hover { background: #154fa8; }
   .pin-error { background: #fff0f0; border: 1px solid #f0b0b0; border-radius: 8px; padding: 9px 14px; font-size: 13px; color: #a00; margin-top: 12px; display: none; }
 
+  /* Identity screen */
+  .id-screen { display: none; flex; align-items: center; justify-content: center; min-height: 100vh; margin: -16px; background: #f0f2f5; }
+  .id-card { background: #fff; border: 1px solid #ddd; border-radius: 14px; padding: 36px 32px; width: 100%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+  .id-title { font-size: 18px; font-weight: 800; color: #1a3a6b; margin: 0 0 4px; }
+  .id-sub { font-size: 12px; color: #888; margin: 0 0 24px; }
+  .id-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
+  .id-field label { font-size: 11px; font-weight: bold; color: #555; text-transform: uppercase; letter-spacing: 0.05em; }
+  .id-field input { background: #f7f8fa; border: 1.5px solid #e0e3e8; border-radius: 8px; padding: 11px 12px; font-size: 15px; color: #111; width: 100%; font-family: Arial, sans-serif; }
+  .id-field input:focus { outline: none; border-color: #1a5dc8; background: #fff; }
+  .id-btn { width: 100%; padding: 13px; font-size: 15px; font-weight: bold; background: #1a5dc8; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-family: Arial, sans-serif; margin-top: 4px; }
+  .id-btn:hover { background: #154fa8; }
+  .id-btn:disabled { background: #aaa; cursor: default; }
+  .id-error { background: #fff0f0; border: 1px solid #f0b0b0; border-radius: 8px; padding: 9px 14px; font-size: 13px; color: #a00; margin-top: 12px; display: none; }
+
   /* Timesheet */
-  .timesheet-screen { display: none; }
-  .card { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 20px; max-width: 960px; margin: 0 auto; }
-  h1 { font-size: 18px; font-weight: bold; margin: 0 0 2px; }
-  .subtitle { font-size: 13px; color: #555; margin: 0 0 16px; }
-  .header-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
-  @media (max-width: 500px) { .header-grid { grid-template-columns: 1fr; } }
-  .field { display: flex; flex-direction: column; gap: 4px; }
-  label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
-  input[type=text], select { background: #f7f7f7; border: 1px solid #ccc; border-radius: 6px; padding: 9px 10px; font-size: 15px; color: #111; width: 100%; -webkit-appearance: none; appearance: none; font-family: Arial, sans-serif; }
-  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px; }
-  input[type=text]:focus, select:focus { outline: none; border-color: #3a7bd5; background-color: #fff; }
-  .time-note { font-size: 12px; color: #5a4200; background: #FFE600; border: 1.5px solid #e6c800; border-radius: 6px; padding: 8px 12px; margin: 12px 0 14px; line-height: 1.5; font-weight: bold; }
-  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 20px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 600px; }
-  thead th { font-size: 11px; font-weight: bold; color: #555; text-align: left; padding: 7px 6px; border: 1px solid #ccc; background: #f9f9f9; white-space: nowrap; }
+  .timesheet-screen { display: none; max-width: 900px; margin: 0 auto; }
+  .ts-card { background: #fff; border-radius: 14px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .ts-header h1 { font-size: 17px; font-weight: 800; color: #1a3a6b; margin: 0 0 2px; letter-spacing: 1px; }
+  .ts-header p { font-size: 12px; color: #888; margin: 0 0 20px; }
+  .fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px) { .fields-grid { grid-template-columns: 1fr; } }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 11px; font-weight: bold; color: #555; text-transform: uppercase; letter-spacing: 0.05em; }
+  .field input, .field select { background: #f7f8fa; border: 1.5px solid #e0e3e8; border-radius: 8px; padding: 10px 12px; font-size: 15px; color: #111; width: 100%; -webkit-appearance: none; appearance: none; font-family: Arial, sans-serif; }
+  .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+  .field input:focus, .field select:focus { outline: none; border-color: #1a5dc8; background: #fff; }
+  .field-invalid input, .field-invalid select { border-color: #e53e3e !important; background: #fff5f5 !important; }
+  .field-error { font-size: 11px; color: #e53e3e; display: none; }
+  .field-invalid .field-error { display: block; }
+  .returned-banner { background: #fff8e0; border: 1.5px solid #f0c030; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: #5a4000; line-height: 1.6; }
+  .returned-banner strong { color: #8a6000; }
+  .time-note { font-size: 12px; color: #5a4200; background: #FFE600; border: 1.5px solid #e6c800; border-radius: 8px; padding: 8px 12px; margin-bottom: 14px; line-height: 1.5; font-weight: bold; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 680px; }
+  thead th { font-size: 11px; font-weight: bold; color: #555; text-align: left; padding: 8px 6px; border: 1px solid #c8d0dc; background: #eef1f7; white-space: nowrap; }
   tbody td { padding: 2px 3px; border: 1px solid #ccc; vertical-align: middle; }
   tbody tr:hover td { background: #f0f5ff; }
   tbody tr.active-row td { background: #e8f0fe; }
@@ -49,7 +69,7 @@
   .ci.field-err { border: 1px solid #e53e3e !important; border-radius: 4px; background: #fff5f5 !important; }
   .day-num { font-size: 12px; color: #777; width: 36px; padding-left: 6px !important; white-space: nowrap; }
   .day-num.cont { color: #8b5cf6; font-weight: bold; font-style: italic; }
-  td.col-total { background: #f5f5f5; cursor: not-allowed; }
+  td.col-total { background: #f5f5f5; }
   td.col-total.cont { background: #ede9ff; }
   td.col-ins { width: 80px; text-align: center; border-color: transparent !important; background: transparent !important; }
   .ins-btn { background: none; border: 1px solid #c0cce0; border-radius: 5px; color: #555; cursor: pointer; font-size: 10px; font-weight: bold; padding: 2px 6px; font-family: Arial, sans-serif; white-space: nowrap; line-height: 1.4; }
@@ -57,7 +77,7 @@
   .del-btn { background: none; border: none; color: #ccc; cursor: pointer; font-size: 13px; padding: 2px 3px; line-height: 1; }
   .del-btn:hover { color: #e53e3e; }
   tfoot td { font-weight: bold; background: #f5f5f5; font-size: 13px; padding: 8px 4px; border: 1px solid #ccc; }
-  .totals-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+  .totals-bar { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 20px; }
   .metric { background: #f5f5f5; border-radius: 8px; padding: 10px 12px; }
   .metric-label { font-size: 11px; color: #666; margin: 0 0 3px; }
   .metric-value { font-size: 20px; font-weight: bold; margin: 0; color: #111; }
@@ -81,13 +101,11 @@
   .sig-upload-box img { max-height: 74px; max-width: 100%; object-fit: contain; display: none; }
   .sig-upload-placeholder { font-size: 12px; color: #999; pointer-events: none; text-align: center; padding: 0 12px; }
   .sig-upload-clear { font-size: 11px; color: #c0392b; cursor: pointer; align-self: flex-end; display: none; text-decoration: underline; }
-  .field-invalid input, .field-invalid select { border-color: #c0392b !important; background: #fff5f5 !important; }
-  .field-error-msg { font-size: 11px; color: #c0392b; margin-top: 2px; display: none; }
-  .field-invalid .field-error-msg { display: block; }
-  .validation-banner { background: #fff0f0; border: 1px solid #f0b0b0; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #a00; margin-bottom: 14px; display: none; line-height: 1.6; }
+  .val-banner { background: #fff5f5; border: 1.5px solid #f0b0b0; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #c0392b; margin-bottom: 14px; display: none; }
   .info-banner { background: #fffbea; border: 1px solid #f0d070; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #5a4500; margin-bottom: 16px; line-height: 1.6; }
+  .submit-status { display: none; padding: 10px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 12px; line-height: 1.6; }
   .action-bar { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
-  .action-btn { padding: 11px 20px; font-size: 14px; border: 1px solid #bbb; border-radius: 8px; background: #f5f5f5; color: #111; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: Arial, sans-serif; white-space: nowrap; }
+  .action-btn { padding: 12px 22px; font-size: 14px; font-weight: bold; border: 1.5px solid #c0cce0; border-radius: 10px; background: #f7f8fa; color: #111; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: Arial, sans-serif; }
   .action-btn:hover { background: #e8e8e8; }
   .action-btn.primary { background: #1a5dc8; color: #fff; border-color: #1a5dc8; }
   .action-btn.primary:hover { background: #154fa8; }
@@ -95,7 +113,7 @@
 </head>
 <body>
 
-<!-- PIN -->
+<!-- PIN Screen -->
 <div class="pin-screen" id="pin-screen">
   <div class="pin-card">
     <p class="pin-logo">Y-TRAK</p>
@@ -107,142 +125,275 @@
   </div>
 </div>
 
-<!-- Timesheet -->
-<div class="timesheet-screen" id="timesheet-screen">
-<div class="card">
-
-  <h1>Yalobusha County Sheriff's Department</h1>
-  <p class="subtitle">Time and Attendance</p>
-
-  <div class="header-grid">
-    <div class="field" id="field-name"><label>Name <span style="color:#c0392b">*</span></label><input type="text" id="f-name" placeholder="Full name" autocomplete="name"><span class="field-error-msg">Required</span></div>
-    <div class="field" id="field-ssn"><label>Last 4 of Social <span style="color:#c0392b">*</span></label><input type="text" id="f-ssn" maxlength="4" placeholder="XXXX" inputmode="numeric"><span class="field-error-msg">Required</span></div>
-    <div class="field" id="field-status"><label>Employment Status <span style="color:#c0392b">*</span></label>
-      <select id="f-status">
-        <option value="" disabled selected>Select status</option>
-        <option>Full-Time</option><option>Part-Time</option><option>Contract</option>
-      </select><span class="field-error-msg">Required</span>
+<!-- Identity Screen -->
+<div class="id-screen" id="id-screen">
+  <div class="id-card">
+    <p class="id-title">Y-TRAK</p>
+    <p class="id-sub">Yalobusha County Sheriff's Department — Please identify yourself</p>
+    <div class="id-field">
+      <label>Full Name <span style="color:#e53e3e">*</span></label>
+      <input type="text" id="id-name" placeholder="Enter your full name" autocomplete="name">
     </div>
-    <div class="field" id="field-month"><label>Month <span style="color:#c0392b">*</span></label>
-      <select id="f-month">
-        <option value="" disabled selected>Select month</option>
-        <option>January</option><option>February</option><option>March</option>
-        <option>April</option><option>May</option><option>June</option>
-        <option>July</option><option>August</option><option>September</option>
-        <option>October</option><option>November</option><option>December</option>
-      </select><span class="field-error-msg">Required</span>
+    <div class="id-field">
+      <label>Last 4 of Social <span style="color:#e53e3e">*</span></label>
+      <input type="text" id="id-ssn" maxlength="4" placeholder="XXXX" inputmode="numeric">
     </div>
-    <div class="field" id="field-year"><label>Year <span style="color:#c0392b">*</span></label><input type="text" id="f-year" maxlength="4" placeholder="2026" inputmode="numeric"><span class="field-error-msg">Required — 4-digit year</span></div>
+    <button class="id-btn" id="id-btn" onclick="checkIdentity()">Continue</button>
+    <div class="id-error" id="id-error"></div>
   </div>
-
-  <div class="time-note">
-    Enter times in 24-hour format — e.g. <strong>0800</strong> or <strong>08:00</strong> for 8 AM, <strong>1600</strong> or <strong>16:00</strong> for 4 PM. Colons added automatically.
-    For split shifts, click <strong>Insert Row</strong> on the right side of any line.
-  </div>
-
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th style="width:38px;">Day</th>
-          <th style="width:70px;">Start</th>
-          <th style="width:70px;">End</th>
-          <th style="width:66px;">Total Hrs</th>
-          <th style="width:66px;">Comp Hrs</th>
-          <th style="width:66px;">Sick Hrs</th>
-          <th>Notes</th>
-          <th style="width:80px;border:none;background:transparent;"></th>
-        </tr>
-      </thead>
-      <tbody id="tc-body"></tbody>
-      <tfoot>
-        <tr>
-          <td colspan="3" style="text-align:right;padding-right:8px;font-size:12px;color:#555;font-weight:normal;">Total hours</td>
-          <td id="tot-total">0.00</td>
-          <td id="tot-comp">0.00</td>
-          <td id="tot-sick">0.00</td>
-          <td colspan="2"></td>
-        </tr>
-      </tfoot>
-    </table>
-  </div>
-
-  <div class="totals-bar">
-    <div class="metric"><p class="metric-label">Total hours</p><p class="metric-value" id="bar-total">0.00</p></div>
-    <div class="metric"><p class="metric-label">Comp hours</p><p class="metric-value" id="bar-comp">0.00</p></div>
-    <div class="metric"><p class="metric-label">Sick hours</p><p class="metric-value" id="bar-sick">0.00</p></div>
-  </div>
-
-  <!-- Employee signature -->
-  <div class="sig-block" id="sig-emp">
-    <span class="sig-block-label">Employee Signature</span>
-    <div class="sig-toggle">
-      <button class="active" onclick="setSigMode('draw')">Sign manually</button>
-      <button onclick="setSigMode('upload')">Insert image</button>
-    </div>
-    <div id="sig-draw-wrap">
-      <div class="sig-canvas-outer" id="emp-canvas-outer">
-        <canvas id="emp-canvas"></canvas>
-        <span class="sig-hint" id="emp-hint">Sign here with your finger or mouse</span>
-      </div>
-      <div style="border-bottom:1.5px solid #555;margin:4px 0;"></div>
-      <div class="sig-draw-actions">
-        <button class="sig-btn clear-btn" onclick="clearDraw()">Clear</button>
-        <button class="sig-btn save" onclick="saveDraw()">Save</button>
-      </div>
-      <span class="sig-saved" id="sig-saved">&#10003; Signature saved</span>
-    </div>
-    <div class="sig-upload-wrap" id="sig-upload-wrap">
-      <div class="sig-upload-box">
-        <input type="file" accept="image/*" id="emp-file" onchange="handleUpload(event)">
-        <img id="emp-upload-img" src="">
-        <span class="sig-upload-placeholder" id="emp-upload-ph">Tap to choose an image</span>
-      </div>
-      <div style="border-bottom:1.5px solid #555;margin:4px 0;"></div>
-      <span class="sig-upload-clear" id="emp-upload-clr" onclick="clearUpload()">Remove image</span>
-    </div>
-  </div>
-
-  <div class="validation-banner" id="val-banner"></div>
-
-  <div class="info-banner">
-    <strong>How to submit:</strong> Fill out your timesheet and click <em>Submit Timesheet</em>. Your supervisor will review it in the portal. Use <em>Download PDF</em> to save a copy for your records.
-  </div>
-
-  <div id="submit-status" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;line-height:1.6;"></div>
-  <div class="action-bar">
-    <button class="action-btn" onclick="downloadPDF()">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/><path d="M2 12h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-      Download PDF
-    </button>
-    <button class="action-btn primary" id="submit-btn" onclick="submitTimesheet()">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-      Submit timesheet
-    </button>
-  </div>
-
 </div>
+
+<!-- Timesheet Screen -->
+<div class="timesheet-screen" id="timesheet-screen">
+
+  <div class="ts-card">
+    <div class="ts-header">
+      <h1>Y-TRAK</h1>
+      <p>Yalobusha County Sheriff's Department — Time and Attendance</p>
+    </div>
+
+    <div id="returned-banner" class="returned-banner" style="display:none;">
+      <strong>&#9888; Returned timesheet</strong> — Your timesheet was returned by your supervisor.<br>
+      <span id="returned-note"></span>
+    </div>
+
+    <div class="fields-grid">
+      <div class="field" id="field-name">
+        <label>Name <span style="color:#e53e3e">*</span></label>
+        <input type="text" id="f-name" placeholder="Full name" autocomplete="name">
+        <span class="field-error">Required</span>
+      </div>
+      <div class="field" id="field-ssn">
+        <label>Last 4 of Social <span style="color:#e53e3e">*</span></label>
+        <input type="text" id="f-ssn" maxlength="4" placeholder="XXXX" inputmode="numeric">
+        <span class="field-error">Required</span>
+      </div>
+      <div class="field" id="field-status">
+        <label>Employment Status <span style="color:#e53e3e">*</span></label>
+        <select id="f-status">
+          <option value="" disabled selected>Select status</option>
+          <option>Full-Time</option><option>Part-Time</option><option>Contract</option>
+        </select>
+        <span class="field-error">Required</span>
+      </div>
+      <div class="field" id="field-month">
+        <label>Month <span style="color:#e53e3e">*</span></label>
+        <select id="f-month">
+          <option value="" disabled selected>Select month</option>
+          <option>January</option><option>February</option><option>March</option>
+          <option>April</option><option>May</option><option>June</option>
+          <option>July</option><option>August</option><option>September</option>
+          <option>October</option><option>November</option><option>December</option>
+        </select>
+        <span class="field-error">Required</span>
+      </div>
+      <div class="field" id="field-year">
+        <label>Year <span style="color:#e53e3e">*</span></label>
+        <input type="text" id="f-year" maxlength="4" placeholder="2026" inputmode="numeric">
+        <span class="field-error">Required — 4-digit year</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="ts-card">
+    <div class="time-note">
+      Enter times in 24-hour format — e.g. <strong>0800</strong> or <strong>08:00</strong> for 8 AM, <strong>1600</strong> or <strong>16:00</strong> for 4 PM. Colons added automatically.
+      For split shifts, click <strong>Insert Row</strong> on the right side of any line.
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:38px;">Day</th>
+            <th style="width:70px;">Start</th>
+            <th style="width:70px;">End</th>
+            <th style="width:66px;">Total Hrs</th>
+            <th style="width:66px;">Comp Hrs</th>
+            <th style="width:66px;">Sick Hrs</th>
+            <th>Notes</th>
+            <th style="width:80px;border:none;background:transparent;"></th>
+          </tr>
+        </thead>
+        <tbody id="tc-body"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" style="text-align:right;padding-right:8px;font-size:12px;color:#555;font-weight:normal;">Total hours</td>
+            <td id="tot-total">0.00</td><td id="tot-comp">0.00</td><td id="tot-sick">0.00</td><td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="totals-bar">
+      <div class="metric"><p class="metric-label">Total hours</p><p class="metric-value" id="bar-total">0.00</p></div>
+      <div class="metric"><p class="metric-label">Comp hours</p><p class="metric-value" id="bar-comp">0.00</p></div>
+      <div class="metric"><p class="metric-label">Sick hours</p><p class="metric-value" id="bar-sick">0.00</p></div>
+    </div>
+
+    <div class="sig-block" id="sig-emp">
+      <span class="sig-block-label">Employee Signature</span>
+      <div class="sig-toggle">
+        <button class="active" onclick="setSigMode('draw')">Sign manually</button>
+        <button onclick="setSigMode('upload')">Insert image</button>
+      </div>
+      <div id="sig-draw-wrap">
+        <div class="sig-canvas-outer" id="emp-canvas-outer">
+          <canvas id="emp-canvas"></canvas>
+          <span class="sig-hint" id="emp-hint">Sign here with your finger or mouse</span>
+        </div>
+        <div style="border-bottom:1.5px solid #555;margin:4px 0;"></div>
+        <div class="sig-draw-actions">
+          <button class="sig-btn clear-btn" onclick="clearDraw()">Clear</button>
+          <button class="sig-btn save" onclick="saveDraw()">Save</button>
+        </div>
+        <span class="sig-saved" id="sig-saved">&#10003; Signature saved</span>
+      </div>
+      <div class="sig-upload-wrap" id="sig-upload-wrap">
+        <div class="sig-upload-box">
+          <input type="file" accept="image/*" id="emp-file" onchange="handleUpload(event)">
+          <img id="emp-upload-img" src="">
+          <span class="sig-upload-placeholder" id="emp-upload-ph">Tap to choose an image</span>
+        </div>
+        <div style="border-bottom:1.5px solid #555;margin:4px 0;"></div>
+        <span class="sig-upload-clear" id="emp-upload-clr" onclick="clearUpload()">Remove image</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="ts-card">
+    <div class="val-banner" id="val-banner"></div>
+    <div class="info-banner">
+      <strong>How to submit:</strong> Fill out your timesheet and click <em>Submit Timesheet</em>. Your supervisor will review it in the portal. Use <em>Download PDF</em> to save a copy for your records.
+    </div>
+    <div class="submit-status" id="submit-status"></div>
+    <div class="action-bar">
+      <button class="action-btn" onclick="downloadPDF()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/><path d="M2 12h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Download PDF
+      </button>
+      <button class="action-btn primary" id="submit-btn" onclick="submitTimesheet()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        Submit timesheet
+      </button>
+    </div>
+  </div>
+
 </div>
 
 <script>
-/* ── PIN ── */
+const sb = supabase.createClient(
+  'https://kwgfonwgeoievgxwvxlg.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3Z2ZvbndnZW9pZXZneHd2eGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4Mzk4MDQsImV4cCI6MjA5MTQxNTgwNH0.KrH-loytrritpSgy6MVBmT0KyyodDp27ZLSATm1dGsM'
+);
+const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3Z2ZvbndnZW9pZXZneHd2eGxnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTgzOTgwNCwiZXhwIjoyMDkxNDE1ODA0fQ.yzHKNyoZ85hj2xxjW_byLStr-O9FOCPna9OVXvzthWI';
+
 const CORRECT_PIN = '38965';
+let sigData = null;
+let returnedSheetId = null;
+
+/* ── PIN ── */
 function checkPin() {
   const val = document.getElementById('pin-input').value.trim();
   if (val === CORRECT_PIN) {
     document.getElementById('pin-screen').style.display = 'none';
-    document.getElementById('timesheet-screen').style.display = 'block';
-    sessionStorage.setItem('ytrak-auth','1');
-    buildGrid();
+    document.getElementById('id-screen').style.display = 'flex';
+    sessionStorage.setItem('ytrak-auth', '1');
+    document.getElementById('id-name').focus();
   } else {
     document.getElementById('pin-error').style.display = 'block';
     document.getElementById('pin-input').value = '';
     document.getElementById('pin-input').focus();
   }
 }
+document.getElementById('pin-input').addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
+
 if (sessionStorage.getItem('ytrak-auth') === '1') {
   document.getElementById('pin-screen').style.display = 'none';
+  document.getElementById('id-screen').style.display = 'flex';
+}
+
+/* ── Identity check ── */
+async function checkIdentity() {
+  const name = document.getElementById('id-name').value.trim();
+  const ssn  = document.getElementById('id-ssn').value.trim();
+  const err  = document.getElementById('id-error');
+  const btn  = document.getElementById('id-btn');
+  err.style.display = 'none';
+
+  if (!name) { err.textContent = 'Please enter your full name.'; err.style.display = 'block'; return; }
+  if (ssn.length !== 4) { err.textContent = 'Please enter your last 4 digits of your Social Security Number.'; err.style.display = 'block'; return; }
+
+  btn.disabled = true; btn.textContent = 'Checking…';
+
+  /* Check for returned timesheet */
+  const { data, error } = await sb.from('timesheets')
+    .select('*')
+    .ilike('employee_name', name)
+    .eq('ssn_last4', ssn)
+    .eq('status', 'returned')
+    .order('submitted_at', { ascending: false })
+    .limit(1);
+
+  btn.disabled = false; btn.textContent = 'Continue';
+
+  document.getElementById('id-screen').style.display = 'none';
   document.getElementById('timesheet-screen').style.display = 'block';
+
+  /* Pre-fill name and SSN */
+  document.getElementById('f-name').value = name;
+  document.getElementById('f-ssn').value  = ssn;
+
+  if (data && data.length > 0) {
+    /* Found a returned timesheet — pre-fill everything */
+    const s = data[0];
+    returnedSheetId = s.id;
+    prefillFromReturned(s);
+  } else {
+    /* No returned timesheet — just show a brief notice and blank form */
+    const notice = document.getElementById('returned-banner');
+    notice.style.display = 'block';
+    notice.style.background = '#eaf7ee';
+    notice.style.borderColor = '#a0d8b0';
+    notice.style.color = '#1a6a30';
+    notice.innerHTML = '&#10003; No returned timesheets found. Your name and last 4 have been pre-filled below.';
+    setTimeout(() => { notice.style.display = 'none'; }, 4000);
+    buildGrid();
+  }
+}
+
+document.getElementById('id-ssn').addEventListener('keydown', e => { if (e.key === 'Enter') checkIdentity(); });
+
+function prefillFromReturned(s) {
+  /* Show returned banner with note */
+  const banner = document.getElementById('returned-banner');
+  const noteEl = document.getElementById('returned-note');
+  banner.style.display = 'block';
+  noteEl.textContent = s.return_note ? `Reason: ${s.return_note}` : 'Please review and resubmit your timesheet.';
+
+  /* Fill header fields */
+  const monthSel = document.getElementById('f-month');
+  for (let i = 0; i < monthSel.options.length; i++) { if (monthSel.options[i].value === s.month) { monthSel.selectedIndex = i; break; } }
+  document.getElementById('f-year').value   = s.year || '';
+  const statusSel = document.getElementById('f-status');
+  for (let i = 0; i < statusSel.options.length; i++) { if (statusSel.options[i].value === s.employment_status) { statusSel.selectedIndex = i; break; } }
+
+  /* Build grid then fill in row data */
+  buildGrid();
+  const rows = s.rows || [];
+  rows.forEach(r => {
+    if (!r.start && !r.end && !r.comp && !r.sick && !r.notes) return;
+    const day = parseInt(r.day);
+    const tr = document.querySelector(`tr[data-day="${day}"]:not([data-cont="true"])`);
+    if (!tr) return;
+    tr.querySelector('.f-start').value = r.start || '';
+    tr.querySelector('.f-end').value   = r.end   || '';
+    tr.querySelector('.f-comp').value  = r.comp  || '';
+    tr.querySelector('.f-sick').value  = r.sick  || '';
+    tr.querySelector('.f-notes').value = r.notes || '';
+    const tot = tr.querySelector('.f-total');
+    if (r.start && r.end) tot.value = calcHours(r.start, r.end);
+  });
+  recalcTotals();
 }
 
 /* ── Time helpers ── */
@@ -282,15 +433,12 @@ function recalcTotals() {
   ['tot-sick', 'bar-sick' ].forEach(id => document.getElementById(id).textContent = f(sick));
 }
 
-/* ── Attach events to a row ── */
+/* ── Grid ── */
 function attachEvents(tr) {
-  const st  = tr.querySelector('.f-start');
-  const en  = tr.querySelector('.f-end');
-  const tot = tr.querySelector('.f-total');
+  const st = tr.querySelector('.f-start'), en = tr.querySelector('.f-end'), tot = tr.querySelector('.f-total');
   function upd() { tot.value = calcHours(st.value, en.value); recalcTotals(); }
   function fmt(inp) { return function() { const f = formatTime(inp.value); if (f) inp.value = f; upd(); }; }
-  st.addEventListener('blur', fmt(st));
-  en.addEventListener('blur', fmt(en));
+  st.addEventListener('blur', fmt(st)); en.addEventListener('blur', fmt(en));
   tr.querySelector('.f-comp').addEventListener('input', recalcTotals);
   tr.querySelector('.f-sick').addEventListener('input', recalcTotals);
   tr.querySelectorAll('.ci:not(.auto-val)').forEach(inp => {
@@ -299,16 +447,12 @@ function attachEvents(tr) {
   });
 }
 
-/* ── Build the initial 31-row grid ── */
 function buildGrid() {
   const tbody = document.getElementById('tc-body');
   tbody.innerHTML = '';
-  for (let d = 1; d <= 31; d++) {
-    addDayRow(d, false, null);
-  }
+  for (let d = 1; d <= 31; d++) addDayRow(d, false, null);
 }
 
-/* ── Add a standard day row ── */
 function addDayRow(day, isCont, insertAfterTr) {
   const tbody = document.getElementById('tc-body');
   const tr = document.createElement('tr');
@@ -316,56 +460,37 @@ function addDayRow(day, isCont, insertAfterTr) {
   tr.setAttribute('data-day', day);
   tr.setAttribute('data-cont', isCont ? 'true' : 'false');
   if (isCont) tr.classList.add('cont-row');
-
   tr.innerHTML = `
-    <td class="day-num${isCont ? ' cont' : ''}">${label}</td>
+    <td class="day-num${isCont?' cont':''}">${label}</td>
     <td><input class="ci f-start" placeholder="" inputmode="numeric"></td>
     <td><input class="ci f-end"   placeholder="" inputmode="numeric"></td>
-    <td class="col-total${isCont ? ' cont' : ''}"><input class="ci f-total auto-val" placeholder="" readonly tabindex="-1"></td>
+    <td class="col-total${isCont?' cont':''}"><input class="ci f-total auto-val" placeholder="" readonly tabindex="-1"></td>
     <td><input class="ci f-comp"  placeholder="" inputmode="decimal"></td>
     <td><input class="ci f-sick"  placeholder="" inputmode="decimal"></td>
     <td><input class="ci f-notes" placeholder=""></td>
     <td class="col-ins">
       ${isCont
-        ? `<button class="del-btn" onclick="removeContRow(this)" title="Remove split shift">&#x2715;</button>`
-        : `<button class="ins-btn" onclick="insertContRow(this, ${day})" title="Add split shift for day ${day}">+ Insert Row</button>`
+        ? `<button class="del-btn" onclick="removeContRow(this)" title="Remove">&#x2715;</button>`
+        : `<button class="ins-btn" onclick="insertContRow(this,${day})" title="Add split shift">+ Insert Row</button>`
       }
     </td>`;
-
-  if (insertAfterTr) {
-    insertAfterTr.parentNode.insertBefore(tr, insertAfterTr.nextSibling);
-  } else {
-    tbody.appendChild(tr);
-  }
-
+  if (insertAfterTr) insertAfterTr.parentNode.insertBefore(tr, insertAfterTr.nextSibling);
+  else tbody.appendChild(tr);
   attachEvents(tr);
   return tr;
 }
 
-/* ── Insert a continuation row after the clicked row ── */
 function insertContRow(btn, day) {
   const tr = btn.closest('tr');
-  // Find the last cont. row already inserted for this day right after this block
-  let insertAfter = tr;
-  let next = tr.nextSibling;
-  while (next && next.nodeType === 1 && next.getAttribute('data-day') === String(day) && next.getAttribute('data-cont') === 'true') {
-    insertAfter = next;
-    next = next.nextSibling;
-  }
+  let insertAfter = tr, next = tr.nextSibling;
+  while (next && next.nodeType===1 && next.getAttribute('data-day')===String(day) && next.getAttribute('data-cont')==='true') { insertAfter=next; next=next.nextSibling; }
   addDayRow(day, true, insertAfter);
 }
-
-/* ── Remove a continuation row ── */
-function removeContRow(btn) {
-  const tr = btn.closest('tr');
-  tr.remove();
-  recalcTotals();
-}
+function removeContRow(btn) { btn.closest('tr').remove(); recalcTotals(); }
 
 /* ── Signature ── */
-let sigData = null;
 function setSigMode(mode) {
-  document.querySelectorAll('.sig-toggle button').forEach((b, i) => b.classList.toggle('active', (i===0&&mode==='draw')||(i===1&&mode==='upload')));
+  document.querySelectorAll('.sig-toggle button').forEach((b,i) => b.classList.toggle('active',(i===0&&mode==='draw')||(i===1&&mode==='upload')));
   document.getElementById('sig-draw-wrap').style.display   = mode==='draw'   ? 'block' : 'none';
   document.getElementById('sig-upload-wrap').style.display = mode==='upload' ? 'flex'  : 'none';
   document.getElementById('sig-upload-wrap').style.flexDirection = 'column';
@@ -373,210 +498,128 @@ function setSigMode(mode) {
   if (mode==='draw') clearDraw(); else clearUpload();
 }
 function setupPad() {
-  const canvas = document.getElementById('emp-canvas');
-  const outer  = document.getElementById('emp-canvas-outer');
-  const hint   = document.getElementById('emp-hint');
-  function resize() {
-    const dpr = window.devicePixelRatio||1, w = outer.clientWidth||300;
-    canvas.width = w*dpr; canvas.height = 80*dpr;
-    canvas.style.width = w+'px'; canvas.style.height = '80px';
-    const ctx = canvas.getContext('2d');
-    ctx.scale(dpr,dpr); ctx.strokeStyle='#111'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.lineJoin='round';
-  }
-  resize(); window.addEventListener('resize', resize);
-  let drawing = false;
-  function getPos(e) { const rect=canvas.getBoundingClientRect(); const src=e.touches?e.touches[0]:e; return {x:src.clientX-rect.left,y:src.clientY-rect.top}; }
-  function start(e) { e.preventDefault(); drawing=true; hint.style.display='none'; const ctx=canvas.getContext('2d'); const p=getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
-  function move(e)  { if(!drawing)return; e.preventDefault(); const ctx=canvas.getContext('2d'); const p=getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
-  function end()    { drawing=false; }
-  canvas.addEventListener('mousedown',start); canvas.addEventListener('mousemove',move); canvas.addEventListener('mouseup',end); canvas.addEventListener('mouseleave',end);
-  canvas.addEventListener('touchstart',start,{passive:false}); canvas.addEventListener('touchmove',move,{passive:false}); canvas.addEventListener('touchend',end);
+  const canvas=document.getElementById('emp-canvas'), outer=document.getElementById('emp-canvas-outer'), hint=document.getElementById('emp-hint');
+  function resize() { const dpr=window.devicePixelRatio||1,w=outer.clientWidth||300; canvas.width=w*dpr; canvas.height=80*dpr; canvas.style.width=w+'px'; canvas.style.height='80px'; const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr); ctx.strokeStyle='#111'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.lineJoin='round'; }
+  resize(); window.addEventListener('resize',resize);
+  let drawing=false;
+  function getPos(e){const rect=canvas.getBoundingClientRect();const src=e.touches?e.touches[0]:e;return{x:src.clientX-rect.left,y:src.clientY-rect.top};}
+  function start(e){e.preventDefault();drawing=true;hint.style.display='none';const ctx=canvas.getContext('2d');const p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);}
+  function move(e){if(!drawing)return;e.preventDefault();const ctx=canvas.getContext('2d');const p=getPos(e);ctx.lineTo(p.x,p.y);ctx.stroke();ctx.beginPath();ctx.moveTo(p.x,p.y);}
+  function end(){drawing=false;}
+  canvas.addEventListener('mousedown',start);canvas.addEventListener('mousemove',move);canvas.addEventListener('mouseup',end);canvas.addEventListener('mouseleave',end);
+  canvas.addEventListener('touchstart',start,{passive:false});canvas.addEventListener('touchmove',move,{passive:false});canvas.addEventListener('touchend',end);
 }
-function saveDraw()  { sigData=document.getElementById('emp-canvas').toDataURL('image/png'); document.getElementById('sig-saved').style.display='block'; }
-function clearDraw() {
-  const canvas=document.getElementById('emp-canvas'), dpr=window.devicePixelRatio||1;
-  canvas.getContext('2d').clearRect(0,0,canvas.width/dpr,canvas.height/dpr);
-  sigData=null; document.getElementById('emp-hint').style.display='flex'; document.getElementById('sig-saved').style.display='none';
-}
-function handleUpload(e) {
-  const f=e.target.files[0]; if(!f)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{ sigData=ev.target.result; const img=document.getElementById('emp-upload-img'); img.src=sigData; img.style.display='block'; document.getElementById('emp-upload-ph').style.display='none'; document.getElementById('emp-upload-clr').style.display='block'; };
-  reader.readAsDataURL(f);
-}
-function clearUpload() {
-  sigData=null; document.getElementById('emp-upload-img').src=''; document.getElementById('emp-upload-img').style.display='none';
-  document.getElementById('emp-upload-ph').style.display='block'; document.getElementById('emp-upload-clr').style.display='none'; document.getElementById('emp-file').value='';
-}
-setupPad(); document.getElementById('sig-upload-wrap').style.display='none';
+function saveDraw(){sigData=document.getElementById('emp-canvas').toDataURL('image/png');document.getElementById('sig-saved').style.display='block';}
+function clearDraw(){const canvas=document.getElementById('emp-canvas'),dpr=window.devicePixelRatio||1;canvas.getContext('2d').clearRect(0,0,canvas.width/dpr,canvas.height/dpr);sigData=null;document.getElementById('emp-hint').style.display='flex';document.getElementById('sig-saved').style.display='none';}
+function handleUpload(e){const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=ev=>{sigData=ev.target.result;const img=document.getElementById('emp-upload-img');img.src=sigData;img.style.display='block';document.getElementById('emp-upload-ph').style.display='none';document.getElementById('emp-upload-clr').style.display='block';};reader.readAsDataURL(f);}
+function clearUpload(){sigData=null;document.getElementById('emp-upload-img').src='';document.getElementById('emp-upload-img').style.display='none';document.getElementById('emp-upload-ph').style.display='block';document.getElementById('emp-upload-clr').style.display='none';document.getElementById('emp-file').value='';}
+setupPad();
+document.getElementById('sig-upload-wrap').style.display='none';
 
 /* ── Validation ── */
 function validateForm() {
-  const checks = [
+  let valid=true;const banner=document.getElementById('val-banner');const missing=[];
+  const checks=[
     {id:'f-name',  fid:'field-name',   label:'Name',             test:v=>v.trim().length>0},
     {id:'f-ssn',   fid:'field-ssn',    label:'Last 4 of Social', test:v=>v.trim().length===4},
     {id:'f-status',fid:'field-status', label:'Employment Status',test:v=>v!==''},
     {id:'f-month', fid:'field-month',  label:'Month',            test:v=>v!==''},
     {id:'f-year',  fid:'field-year',   label:'Year',             test:v=>/^\d{4}$/.test(v.trim())}
   ];
-  const missing=[]; let valid=true;
-  checks.forEach(c=>{
-    const el=document.getElementById(c.id), f=document.getElementById(c.fid);
-    const pass=c.test(el.value); f.classList.toggle('field-invalid',!pass);
-    if(!pass){missing.push(c.label);valid=false;}
-  });
-  const banner=document.getElementById('val-banner');
+  checks.forEach(c=>{const el=document.getElementById(c.id),f=document.getElementById(c.fid);const pass=c.test(el.value);f.classList.toggle('field-invalid',!pass);if(!pass){missing.push(c.label);valid=false;}});
   if(!valid){banner.textContent='Please complete: '+missing.join(', ');banner.style.display='block';banner.scrollIntoView({behavior:'smooth',block:'center'});}
   else{banner.style.display='none';}
   return valid;
 }
 
-/* ── Build rows for PDF/submit — merge cont rows into same day ── */
+/* ── Build rows ── */
 function buildRows() {
-  const dayMap = {};
-  for (let d=1;d<=31;d++) dayMap[d]=[];
-
-  document.querySelectorAll('tr[data-day]').forEach(tr => {
-    const day  = parseInt(tr.getAttribute('data-day'));
-    const cont = tr.getAttribute('data-cont')==='true';
-    dayMap[day].push({
-      cont,
-      start: tr.querySelector('.f-start').value,
-      end:   tr.querySelector('.f-end').value,
-      total: tr.querySelector('.f-total').value,
-      comp:  tr.querySelector('.f-comp').value,
-      sick:  tr.querySelector('.f-sick').value,
-      notes: tr.querySelector('.f-notes').value
-    });
+  const dayMap={};
+  for(let d=1;d<=31;d++) dayMap[d]=[];
+  document.querySelectorAll('tr[data-day]').forEach(tr=>{
+    const day=parseInt(tr.getAttribute('data-day'));
+    const cont=tr.getAttribute('data-cont')==='true';
+    dayMap[day].push({cont,start:tr.querySelector('.f-start').value,end:tr.querySelector('.f-end').value,total:tr.querySelector('.f-total').value,comp:tr.querySelector('.f-comp').value,sick:tr.querySelector('.f-sick').value,notes:tr.querySelector('.f-notes').value});
   });
-
-  const grid = [];
-  for (let d=1;d<=31;d++) {
-    const shifts = dayMap[d];
-    if (!shifts || shifts.length === 0) {
-      grid.push({day:String(d),start:'',end:'',total:'',comp:'',sick:'',notes:''});
-    } else if (shifts.length === 1) {
-      grid.push({day:String(d),start:shifts[0].start,end:shifts[0].end,total:shifts[0].total,comp:shifts[0].comp,sick:shifts[0].sick,notes:shifts[0].notes});
-    } else {
-      let totalH=0,totalC=0,totalS=0;
-      const parts=[];
-      shifts.forEach((s,i)=>{
-        totalH+=parseFloat(s.total)||0;
-        totalC+=parseFloat(s.comp)||0;
-        totalS+=parseFloat(s.sick)||0;
-        if(s.start||s.end) parts.push(`${s.start||'?'}-${s.end||'?'}${s.notes?' ('+s.notes+')':''}`);
-      });
-      grid.push({
-        day:String(d),
-        start:shifts[0].start,
-        end:shifts[shifts.length-1].end,
-        total:totalH>0?totalH.toFixed(2):'',
-        comp:totalC>0?totalC.toFixed(2):'',
-        sick:totalS>0?totalS.toFixed(2):'',
-        notes:parts.join(' | ')
-      });
-    }
+  const grid=[];
+  for(let d=1;d<=31;d++){
+    const shifts=dayMap[d];
+    if(!shifts||shifts.length===0){grid.push({day:String(d),start:'',end:'',total:'',comp:'',sick:'',notes:''});}
+    else if(shifts.length===1){grid.push({day:String(d),start:shifts[0].start,end:shifts[0].end,total:shifts[0].total,comp:shifts[0].comp,sick:shifts[0].sick,notes:shifts[0].notes});}
+    else{let totalH=0,totalC=0,totalS=0;const parts=[];shifts.forEach((s,i)=>{totalH+=parseFloat(s.total)||0;totalC+=parseFloat(s.comp)||0;totalS+=parseFloat(s.sick)||0;if(s.start||s.end)parts.push(`${s.start||'?'}-${s.end||'?'}${s.notes?' ('+s.notes+')':''}${i>0?' cont.':''}`);}); grid.push({day:String(d),start:shifts[0].start,end:shifts[shifts.length-1].end,total:totalH>0?totalH.toFixed(2):'',comp:totalC>0?totalC.toFixed(2):'',sick:totalS>0?totalS.toFixed(2):'',notes:parts.join(' | ')});}
   }
   return grid;
 }
 
 function getFormData() {
-  return {
-    name:     document.getElementById('f-name').value||'',
-    ssn:      document.getElementById('f-ssn').value||'',
-    status:   document.getElementById('f-status').value||'',
-    month:    document.getElementById('f-month').value||'',
-    year:     document.getElementById('f-year').value||'',
-    totTotal: document.getElementById('bar-total').textContent,
-    totComp:  document.getElementById('bar-comp').textContent,
-    totSick:  document.getElementById('bar-sick').textContent,
-    empSrc:   sigData||'',
-    rows:     buildRows()
-  };
+  return {name:document.getElementById('f-name').value||'',ssn:document.getElementById('f-ssn').value||'',status:document.getElementById('f-status').value||'',month:document.getElementById('f-month').value||'',year:document.getElementById('f-year').value||'',totTotal:document.getElementById('bar-total').textContent,totComp:document.getElementById('bar-comp').textContent,totSick:document.getElementById('bar-sick').textContent,empSrc:sigData||'',rows:buildRows()};
 }
 
-/* ── PDF ── */
-function buildPDF(data) {
-  const {jsPDF}=window.jspdf;
-  const doc=new jsPDF({orientation:'portrait',unit:'pt',format:'letter'});
-  const ml=36,mr=576,pw=mr-ml; let y=36;
-  doc.setFont('helvetica','bold'); doc.setFontSize(14.5);
-  doc.text("Yalobusha County Sheriff's Department",ml,y); y+=17;
-  doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
-  doc.text('Time and Attendance',ml,y); y+=21;
-  const colW=pw/2;
-  [[['Name:',data.name],['Last 4 of Social:',data.ssn]],[['Employment Status:',data.status]],[['Current Month:',data.month],['Current Year:',data.year]]].forEach(row=>{
-    row.forEach((item,i)=>{
-      const x=ml+i*colW;
-      doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.text(item[0],x,y);
-      const lw=doc.getTextWidth(item[0])+4;
-      doc.setFont('helvetica','normal'); doc.text(item[1]||'',x+lw,y);
-      doc.line(x+lw,y+1,x+colW-6,y+1);
-    }); y+=15;
-  }); y+=6;
-  const cols=[{label:'Day',w:26},{label:'Start',w:52},{label:'End',w:52},{label:'Total Hrs',w:54},{label:'Comp Hrs',w:54},{label:'Sick Hrs',w:54},{label:'Notes',w:pw-26-52-52-54-54-54}];
-  const rowH=13.5,hdrH=16.5;
-  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setFillColor(240,240,240);
-  doc.rect(ml,y,pw,hdrH,'FD'); let cx=ml;
-  cols.forEach(col=>{doc.text(col.label,cx+2,y+11.5);cx+=col.w;if(cx<mr)doc.line(cx,y,cx,y+hdrH);});
-  y+=hdrH; doc.setFont('helvetica','normal'); doc.setFontSize(8);
-  data.rows.forEach(row=>{
-    const vals=[row.day,row.start,row.end,row.total,row.comp,row.sick,row.notes];
-    doc.rect(ml,y,pw,rowH); cx=ml;
-    cols.forEach((col,i)=>{if(vals[i])doc.text(String(vals[i]),cx+2,y+9.5);cx+=col.w;if(cx<mr)doc.line(cx,y,cx,y+rowH);});
-    y+=rowH;
-  });
-  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setFillColor(240,240,240);
-  doc.rect(ml,y,pw,rowH,'FD');
-  const totW=cols[0].w+cols[1].w+cols[2].w;
-  doc.text('Total Hours:',ml+totW-doc.getTextWidth('Total Hours:')-4,y+9.5); cx=ml+totW;
-  [data.totTotal,data.totComp,data.totSick].forEach((val,i)=>{if(val)doc.text(val,cx+2,y+9.5);cx+=cols[3+i].w;if(cx<mr)doc.line(cx,y,cx,y+rowH);});
-  y+=rowH+20;
-  const sigW=(pw-32)/2,sigH=44;
-  doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
-  doc.text('Employee Signature:',ml,y); y+=6;
-  if(data.empSrc&&data.empSrc.startsWith('data:image')){try{doc.addImage(data.empSrc,'PNG',ml,y,sigW,sigH-8);}catch(e){}}
-  doc.line(ml,y+sigH,ml+sigW,y+sigH);
-  return doc;
-}
-function downloadPDF() {
-  if(!validateForm())return;
-  const data=getFormData();
-  buildPDF(data).save(`${(data.name||'Name').replace(/\s+/g,'_')}_${data.month||'Month'}_${data.year||'Year'}_Timesheet.pdf`);
-}
-
-['f-name','f-ssn','f-status','f-month','f-year'].forEach(id=>{
-  const el=document.getElementById(id);
-  const map={'f-name':'field-name','f-ssn':'field-ssn','f-status':'field-status','f-month':'field-month','f-year':'field-year'};
-  el.addEventListener('input', ()=>document.getElementById(map[id])?.classList.remove('field-invalid'));
-  el.addEventListener('change',()=>document.getElementById(map[id])?.classList.remove('field-invalid'));
-});
-
-
+/* ── Submit ── */
 async function submitTimesheet() {
   if(!validateForm())return;
   const data=getFormData();
   const btn=document.getElementById('submit-btn');
   const statusEl=document.getElementById('submit-status');
-  btn.disabled=true; btn.innerHTML='Submitting&hellip;';
+  btn.disabled=true;btn.innerHTML='Submitting&hellip;';
   statusEl.style.display='none';
+
   try {
+    /* If resubmitting a returned timesheet, delete the old one first */
+    if (returnedSheetId) {
+      await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${returnedSheetId}`, {
+        method: 'DELETE', headers: { 'apikey': SERVICE_KEY, 'Authorization': 'Bearer ' + SERVICE_KEY }
+      });
+      returnedSheetId = null;
+    }
+
     const res=await fetch('/.netlify/functions/submit-timesheet',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
     const json=await res.json();
     if(json.success){
-      statusEl.style.cssText='display:block;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;line-height:1.6;background:#eaf7ee;border:1px solid #a0d8b0;color:#1a6a30;';
+      statusEl.style.cssText='display:block;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:12px;line-height:1.6;background:#eaf7ee;border:1.5px solid #a0d8b0;color:#1a6a30;';
       statusEl.textContent='✓ Timesheet submitted successfully! Your supervisor will review it shortly.';
       btn.innerHTML='✓ Submitted';
+      document.getElementById('returned-banner').style.display='none';
     } else { throw new Error(json.error||'Unknown error'); }
   } catch(err) {
-    statusEl.style.cssText='display:block;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;line-height:1.6;background:#fff0f0;border:1px solid #f0b0b0;color:#c0392b;';
+    statusEl.style.cssText='display:block;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:12px;line-height:1.6;background:#fff0f0;border:1.5px solid #f0b0b0;color:#c0392b;';
     statusEl.textContent='✗ Submission failed: '+err.message;
     btn.disabled=false;
     btn.innerHTML='<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Submit timesheet';
   }
 }
 
-if(sessionStorage.getItem('ytrak-auth')==='1') buildGrid();
+/* ── PDF ── */
+function buildPDF(data) {
+  const{jsPDF}=window.jspdf;const doc=new jsPDF({orientation:'portrait',unit:'pt',format:'letter'});const ml=36,mr=576,pw=mr-ml;let y=36;
+  doc.setFont('helvetica','bold');doc.setFontSize(14.5);doc.text("Yalobusha County Sheriff's Department",ml,y);y+=17;
+  doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.text('Time and Attendance',ml,y);y+=21;
+  const colW=pw/2;
+  [[['Name:',data.name],['Last 4 of Social:',data.ssn]],[['Employment Status:',data.status]],[['Current Month:',data.month],['Current Year:',data.year]]].forEach(row=>{row.forEach((item,i)=>{const x=ml+i*colW;doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.text(item[0],x,y);const lw=doc.getTextWidth(item[0])+4;doc.setFont('helvetica','normal');doc.text(item[1]||'',x+lw,y);doc.line(x+lw,y+1,x+colW-6,y+1);});y+=15;});y+=6;
+  const cols=[{label:'Day',w:26},{label:'Start',w:52},{label:'End',w:52},{label:'Total Hrs',w:54},{label:'Comp Hrs',w:54},{label:'Sick Hrs',w:54},{label:'Notes',w:pw-26-52-52-54-54-54}];
+  const rowH=13.5,hdrH=16.5;
+  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setFillColor(240,240,240);doc.rect(ml,y,pw,hdrH,'FD');let cx=ml;
+  cols.forEach(col=>{doc.text(col.label,cx+2,y+11.5);cx+=col.w;if(cx<mr)doc.line(cx,y,cx,y+hdrH);});
+  y+=hdrH;doc.setFont('helvetica','normal');doc.setFontSize(8);
+  data.rows.forEach(row=>{const vals=[row.day,row.start,row.end,row.total,row.comp,row.sick,row.notes];doc.rect(ml,y,pw,rowH);cx=ml;cols.forEach((col,i)=>{if(vals[i])doc.text(String(vals[i]),cx+2,y+9.5);cx+=col.w;if(cx<mr)doc.line(cx,y,cx,y+rowH);});y+=rowH;});
+  doc.setFont('helvetica','bold');doc.setFontSize(8.5);doc.setFillColor(240,240,240);doc.rect(ml,y,pw,rowH,'FD');
+  const totW=cols[0].w+cols[1].w+cols[2].w;doc.text('Total Hours:',ml+totW-doc.getTextWidth('Total Hours:')-4,y+9.5);cx=ml+totW;
+  [data.totTotal,data.totComp,data.totSick].forEach((val,i)=>{if(val)doc.text(val,cx+2,y+9.5);cx+=cols[3+i].w;if(cx<mr)doc.line(cx,y,cx,y+rowH);});
+  y+=rowH+20;
+  const sigW=(pw-32)/2,sigH=44;
+  doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.text('Employee Signature:',ml,y);y+=6;
+  if(data.empSrc&&data.empSrc.startsWith('data:image')){try{doc.addImage(data.empSrc,'PNG',ml,y,sigW,sigH-8);}catch(e){}}
+  doc.line(ml,y+sigH,ml+sigW,y+sigH);
+  return doc;
+}
+function downloadPDF(){if(!validateForm())return;const data=getFormData();buildPDF(data).save(`${(data.name||'Name').replace(/\s+/g,'_')}_${data.month||'Month'}_${data.year||'Year'}_Timesheet.pdf`);}
+
+['f-name','f-ssn','f-status','f-month','f-year'].forEach(id=>{
+  const el=document.getElementById(id);
+  const map={'f-name':'field-name','f-ssn':'field-ssn','f-status':'field-status','f-month':'field-month','f-year':'field-year'};
+  el.addEventListener('input',()=>document.getElementById(map[id])?.classList.remove('field-invalid'));
+  el.addEventListener('change',()=>document.getElementById(map[id])?.classList.remove('field-invalid'));
+});
 </script>
 </body>
 </html>
