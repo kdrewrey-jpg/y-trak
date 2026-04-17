@@ -268,4 +268,162 @@ function renderTable() {
 
   document.getElementById('loading').style.display = 'none';
 
-  if (rows.le
+  if (rows.length === 0) {
+    document.getElementById('sheet-table').style.display = 'none';
+    document.getElementById('sheet-empty').style.display = 'block';
+    return;
+  }
+
+  const tbody = document.getElementById('sheet-body');
+  tbody.innerHTML = rows.map(s => `<tr>
+    <td><strong>${s.employee_name}</strong><br><span style="font-size:12px;color:#888;">${s.employment_status}</span></td>
+    <td>${s.month} ${s.year}</td>
+    <td>${s.total_hours}</td>
+    <td>${s.approved_by_name || '—'}</td>
+    <td>${s.approved_at ? new Date(s.approved_at).toLocaleDateString() : '—'}</td>
+    <td><span class="badge-approved">Approved</span></td>
+    <td>
+      <button class="print-btn" onclick="openModal('${s.id}')">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="width:14px;height:14px;"><rect x="3" y="1" width="10" height="5" rx="1" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="1" y="6" width="14" height="7" rx="1" stroke="currentColor" stroke-width="1.2" fill="none"/><rect x="4" y="10" width="8" height="4" rx="0.5" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="12" cy="9" r="1" fill="currentColor"/></svg>
+        Print
+      </button>
+    </td>
+  </tr>`).join('');
+
+  document.getElementById('sheet-table').style.display = 'table';
+  document.getElementById('sheet-empty').style.display = 'none';
+}
+
+/* ── Print modal ── */
+function openModal(id) {
+  const s = allSheets.find(x => x.id === id);
+  if (!s) return;
+  currentSheet = s;
+
+  document.getElementById('modal-title').textContent = `${s.employee_name} — ${s.month} ${s.year}`;
+  document.getElementById('mo-name').textContent   = s.employee_name;
+  document.getElementById('mo-ssn').textContent    = s.ssn_last4;
+  document.getElementById('mo-status').textContent = s.employment_status;
+  document.getElementById('mo-month').textContent  = s.month;
+  document.getElementById('mo-year').textContent   = s.year;
+  document.getElementById('mo-total').textContent  = s.total_hours;
+
+  const rows = s.rows || [];
+  document.getElementById('mo-rows').innerHTML = rows.map(r => `<tr>
+    <td>${r.day}</td><td>${r.start||''}</td><td>${r.end||''}</td>
+    <td>${r.total||''}</td><td>${r.comp||''}</td><td>${r.sick||''}</td><td>${r.notes||''}</td>
+  </tr>`).join('');
+
+  document.getElementById('mo-tot-total').textContent = s.total_hours;
+  document.getElementById('mo-tot-comp').textContent  = s.comp_hours;
+  document.getElementById('mo-tot-sick').textContent  = s.sick_hours;
+
+  const empImg = document.getElementById('mo-emp-sig');
+  if (s.emp_signature) { empImg.src = s.emp_signature; empImg.style.display = 'block'; } else { empImg.style.display = 'none'; }
+
+  const depImg = document.getElementById('mo-dep-sig');
+  if (s.dep_signature) { depImg.src = s.dep_signature; depImg.style.display = 'block'; } else { depImg.style.display = 'none'; }
+
+  document.getElementById('mo-stamp').textContent = s.approved_by_name
+    ? `✓ Approved by ${s.approved_by_name} on ${new Date(s.approved_at).toLocaleString()}`
+    : '';
+
+  document.getElementById('print-modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('print-modal').classList.remove('open'); }
+
+async function doPrint() {
+  const { jsPDF } = window.jspdf;
+  const d = currentSheet;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+  const ml = 36, mr = 576, pw = mr - ml; let y = 36;
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(14.5);
+  doc.text("Yalobusha County Sheriff's Department", ml, y); y += 17;
+  doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
+  doc.text('Time and Attendance', ml, y); y += 21;
+
+  const colW = pw / 2;
+  [[['Name:', d.employee_name],['Last 4 of Social:', d.ssn_last4]],[['Employment Status:', d.employment_status]],[['Current Month:', d.month],['Current Year:', d.year]]].forEach(row => {
+    row.forEach((item, i) => {
+      const x = ml + i * colW;
+      doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.text(item[0], x, y);
+      const lw = doc.getTextWidth(item[0]) + 4;
+      doc.setFont('helvetica','normal'); doc.text(item[1]||'', x + lw, y);
+      doc.line(x + lw, y + 1, x + colW - 6, y + 1);
+    }); y += 15;
+  }); y += 6;
+
+  const cols = [{label:'Day',w:26},{label:'Start',w:52},{label:'End',w:52},{label:'Total Hrs',w:54},{label:'Comp Hrs',w:54},{label:'Sick Hrs',w:54},{label:'Notes',w:pw-26-52-52-54-54-54}];
+  const rowH = 13.5, hdrH = 16.5;
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setFillColor(240,240,240);
+  doc.rect(ml, y, pw, hdrH, 'FD'); let cx = ml;
+  cols.forEach(col => { doc.text(col.label, cx+2, y+11.5); cx += col.w; if(cx<mr) doc.line(cx,y,cx,y+hdrH); });
+  y += hdrH;
+  doc.setFont('helvetica','normal'); doc.setFontSize(8);
+
+  const allRows = [];
+  for (let day = 1; day <= 31; day++) {
+    const found = (d.rows||[]).find(r => parseInt(r.day) === day);
+    allRows.push(found || { day: String(day), start:'', end:'', total:'', comp:'', sick:'', notes:'' });
+  }
+  allRows.forEach(row => {
+    const vals = [row.day, row.start, row.end, row.total, row.comp, row.sick, row.notes];
+    doc.rect(ml, y, pw, rowH); cx = ml;
+    cols.forEach((col, i) => { if (vals[i]) doc.text(String(vals[i]), cx+2, y+9.5); cx += col.w; if (cx < mr) doc.line(cx, y, cx, y+rowH); });
+    y += rowH;
+  });
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setFillColor(240,240,240);
+  doc.rect(ml, y, pw, rowH, 'FD');
+  const totW = cols[0].w + cols[1].w + cols[2].w;
+  doc.text('Total Hours:', ml+totW-doc.getTextWidth('Total Hours:')-4, y+9.5); cx = ml + totW;
+  [d.total_hours, d.comp_hours, d.sick_hours].forEach((val, i) => { if (val) doc.text(val, cx+2, y+9.5); cx += cols[3+i].w; if (cx < mr) doc.line(cx, y, cx, y+rowH); });
+  y += rowH + 20;
+
+  const sigW = (pw - 32) / 2, sigH = 44;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
+  doc.text('Employee Signature:', ml, y);
+  doc.text('Chief Deputy Signature:', ml+sigW+32, y);
+  y += 6;
+
+  const getSigDims = (src, maxW, maxH) => new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => { const ratio = img.naturalHeight/img.naturalWidth; let w = Math.min(img.naturalWidth, maxW), h = w*ratio; if(h>maxH){h=maxH;w=h/ratio;} resolve({w,h}); };
+    img.onerror = () => resolve({w:maxW*0.6,h:maxH*0.6});
+    img.src = src;
+  });
+
+  if (d.emp_signature && d.emp_signature.startsWith('data:image')) {
+    try { const dims = await getSigDims(d.emp_signature, sigW-8, sigH-8); doc.addImage(d.emp_signature, 'PNG', ml+4, y+(sigH-dims.h)/2, dims.w, dims.h); } catch(e) {}
+  }
+  doc.line(ml, y+sigH, ml+sigW, y+sigH);
+
+  if (d.dep_signature && d.dep_signature.startsWith('data:image')) {
+    try { const dims = await getSigDims(d.dep_signature, sigW-8, sigH-8); doc.addImage(d.dep_signature, 'PNG', ml+sigW+36, y+(sigH-dims.h)/2, dims.w, dims.h); } catch(e) {}
+  }
+  doc.line(ml+sigW+32, y+sigH, ml+sigW+32+sigW, y+sigH);
+
+  const depX = ml + sigW + 32; let depTextY = y + sigH + 10;
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
+  if (d.reviewed_by_name) {
+    doc.setTextColor(30,80,160);
+    doc.text(`Validated by ${d.reviewed_by_name}`, depX, depTextY); depTextY += 10;
+    doc.text(`on ${new Date(d.reviewed_at).toLocaleString()}`, depX, depTextY); depTextY += 12;
+  }
+  if (d.approved_by_name) {
+    doc.setTextColor(30,122,60); doc.setFont('helvetica','italic');
+    doc.text(`Approved by ${d.approved_by_name}`, depX, depTextY); depTextY += 10;
+    doc.text(`on ${new Date(d.approved_at).toLocaleString()}`, depX, depTextY);
+  }
+  doc.setTextColor(0,0,0);
+
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url);
+  if (win) win.onload = () => { win.focus(); win.print(); };
+}
+</script>
+</body>
+</html>
