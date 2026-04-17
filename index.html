@@ -23,7 +23,7 @@
   .pin-error { background: #fff0f0; border: 1px solid #f0b0b0; border-radius: 8px; padding: 9px 14px; font-size: 13px; color: #a00; margin-top: 12px; display: none; }
 
   /* Identity screen */
-  .id-screen { display: none; flex; align-items: center; justify-content: center; min-height: 100vh; margin: -16px; background: #f0f2f5; }
+  .id-screen { display: none; align-items: center; justify-content: center; min-height: 100vh; margin: -16px; background: #f0f2f5; }
   .id-card { background: #fff; border: 1px solid #ddd; border-radius: 14px; padding: 36px 32px; width: 100%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
   .id-title { font-size: 18px; font-weight: 800; color: #1a3a6b; margin: 0 0 4px; }
   .id-sub { font-size: 12px; color: #888; margin: 0 0 24px; }
@@ -31,10 +31,21 @@
   .id-field label { font-size: 11px; font-weight: bold; color: #555; text-transform: uppercase; letter-spacing: 0.05em; }
   .id-field input { background: #f7f8fa; border: 1.5px solid #e0e3e8; border-radius: 8px; padding: 11px 12px; font-size: 15px; color: #111; width: 100%; font-family: Arial, sans-serif; }
   .id-field input:focus { outline: none; border-color: #1a5dc8; background: #fff; }
+  .id-field select { background: #f7f8fa; border: 1.5px solid #e0e3e8; border-radius: 8px; padding: 11px 12px; font-size: 15px; color: #111; width: 100%; font-family: Arial, sans-serif; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+  .id-field select:focus { outline: none; border-color: #1a5dc8; background-color: #fff; }
   .id-btn { width: 100%; padding: 13px; font-size: 15px; font-weight: bold; background: #1a5dc8; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-family: Arial, sans-serif; margin-top: 4px; }
   .id-btn:hover { background: #154fa8; }
   .id-btn:disabled { background: #aaa; cursor: default; }
+  .id-btn.secondary { background: #f0f2f5; color: #1a3a6b; border: 1.5px solid #c0cce0; margin-top: 10px; }
+  .id-btn.secondary:hover { background: #e0e8f5; }
+  .id-divider { display: flex; align-items: center; gap: 10px; margin: 16px 0; }
+  .id-divider span { font-size: 12px; color: #aaa; white-space: nowrap; }
+  .id-divider::before, .id-divider::after { content: ''; flex: 1; height: 1px; background: #e0e3e8; }
   .id-error { background: #fff0f0; border: 1px solid #f0b0b0; border-radius: 8px; padding: 9px 14px; font-size: 13px; color: #a00; margin-top: 12px; display: none; }
+
+  /* Recall section */
+  .recall-section { display: none; margin-top: 4px; }
+  .recall-section .recall-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
 
   /* Timesheet */
   .timesheet-screen { display: none; max-width: 900px; margin: 0 auto; }
@@ -53,6 +64,7 @@
   .field-invalid .field-error { display: block; }
   .returned-banner { background: #fff8e0; border: 1.5px solid #f0c030; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: #5a4000; line-height: 1.6; }
   .returned-banner strong { color: #8a6000; }
+  .recalled-banner { background: #e8f0fe; border: 1.5px solid #aac4f0; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: #1a3a6b; line-height: 1.6; }
   .time-note { font-size: 12px; color: #5a4200; background: #FFE600; border: 1.5px solid #e6c800; border-radius: 8px; padding: 8px 12px; margin-bottom: 14px; line-height: 1.5; font-weight: bold; }
   .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 14px; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 680px; }
@@ -136,9 +148,40 @@
     </div>
     <div class="id-field">
       <label>Last 4 of Social <span style="color:#e53e3e">*</span></label>
-      <input type="text" id="id-ssn" maxlength="4" placeholder="XXXX" inputmode="numeric">
+      <input type="text" id="id-ssn" maxlength="4" placeholder="XXXX" inputmode="numeric" onkeydown="if(event.key==='Enter') checkIdentity()">
     </div>
     <button class="id-btn" id="id-btn" onclick="checkIdentity()">Continue</button>
+
+    <div class="id-divider"><span>or</span></div>
+
+    <button class="id-btn secondary" onclick="toggleRecall()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"><path d="M2 8a6 6 0 106-6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/><path d="M2 4v4h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      Recall a timesheet
+    </button>
+
+    <div class="recall-section" id="recall-section">
+      <div class="recall-fields">
+        <div class="id-field" style="margin-bottom:0;">
+          <label>Month</label>
+          <select id="recall-month">
+            <option value="" disabled selected>Month</option>
+            <option>January</option><option>February</option><option>March</option>
+            <option>April</option><option>May</option><option>June</option>
+            <option>July</option><option>August</option><option>September</option>
+            <option>October</option><option>November</option><option>December</option>
+          </select>
+        </div>
+        <div class="id-field" style="margin-bottom:0;">
+          <label>Year</label>
+          <input type="text" id="recall-year" maxlength="4" placeholder="2026" inputmode="numeric">
+        </div>
+      </div>
+      <button class="id-btn" id="recall-btn" onclick="recallTimesheet()" style="margin-top:10px;background:#1a7a3a;border:none;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"><path d="M2 8a6 6 0 106-6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/><path d="M2 4v4h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        Load Timesheet
+      </button>
+    </div>
+
     <div class="id-error" id="id-error"></div>
   </div>
 </div>
@@ -155,6 +198,10 @@
     <div id="returned-banner" class="returned-banner" style="display:none;">
       <strong>&#9888; Returned timesheet</strong> — Your timesheet was returned by your supervisor.<br>
       <span id="returned-note"></span>
+    </div>
+
+    <div id="recalled-banner" class="recalled-banner" style="display:none;">
+      <strong>&#8635; Recalled timesheet</strong> — Your previous timesheet has been loaded. Make your changes and resubmit.
     </div>
 
     <div class="fields-grid">
@@ -289,7 +336,7 @@ const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 const CORRECT_PIN = '38965';
 let sigData = null;
-let returnedSheetId = null;
+let existingSheetId = null;
 
 /* ── PIN ── */
 function checkPin() {
@@ -312,7 +359,15 @@ if (sessionStorage.getItem('ytrak-auth') === '1') {
   document.getElementById('id-screen').style.display = 'flex';
 }
 
-/* ── Identity check ── */
+/* ── Toggle recall section ── */
+function toggleRecall() {
+  const sec = document.getElementById('recall-section');
+  const isOpen = sec.style.display === 'block';
+  sec.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) document.getElementById('recall-month').focus();
+}
+
+/* ── Identity check (new timesheet) ── */
 async function checkIdentity() {
   const name = document.getElementById('id-name').value.trim();
   const ssn  = document.getElementById('id-ssn').value.trim();
@@ -321,12 +376,12 @@ async function checkIdentity() {
   err.style.display = 'none';
 
   if (!name) { err.textContent = 'Please enter your full name.'; err.style.display = 'block'; return; }
-  if (ssn.length !== 4) { err.textContent = 'Please enter your last 4 digits of your Social Security Number.'; err.style.display = 'block'; return; }
+  if (ssn.length !== 4) { err.textContent = 'Please enter the last 4 digits of your Social Security Number.'; err.style.display = 'block'; return; }
 
   btn.disabled = true; btn.textContent = 'Checking…';
 
   /* Check for returned timesheet */
-  const { data, error } = await sb.from('timesheets')
+  const { data } = await sb.from('timesheets')
     .select('*')
     .ilike('employee_name', name)
     .eq('ssn_last4', ssn)
@@ -336,20 +391,14 @@ async function checkIdentity() {
 
   btn.disabled = false; btn.textContent = 'Continue';
 
-  document.getElementById('id-screen').style.display = 'none';
-  document.getElementById('timesheet-screen').style.display = 'block';
-
-  /* Pre-fill name and SSN */
+  showTimesheetScreen();
   document.getElementById('f-name').value = name;
   document.getElementById('f-ssn').value  = ssn;
 
   if (data && data.length > 0) {
-    /* Found a returned timesheet — pre-fill everything */
-    const s = data[0];
-    returnedSheetId = s.id;
-    prefillFromReturned(s);
+    existingSheetId = data[0].id;
+    prefillSheet(data[0], 'returned');
   } else {
-    /* No returned timesheet — just show a brief notice and blank form */
     const notice = document.getElementById('returned-banner');
     notice.style.display = 'block';
     notice.style.background = '#eaf7ee';
@@ -361,23 +410,84 @@ async function checkIdentity() {
   }
 }
 
-document.getElementById('id-ssn').addEventListener('keydown', e => { if (e.key === 'Enter') checkIdentity(); });
+/* ── Recall timesheet ── */
+async function recallTimesheet() {
+  const name  = document.getElementById('id-name').value.trim();
+  const ssn   = document.getElementById('id-ssn').value.trim();
+  const month = document.getElementById('recall-month').value;
+  const year  = document.getElementById('recall-year').value.trim();
+  const err   = document.getElementById('id-error');
+  const btn   = document.getElementById('recall-btn');
+  err.style.display = 'none';
 
-function prefillFromReturned(s) {
-  /* Show returned banner with note */
-  const banner = document.getElementById('returned-banner');
-  const noteEl = document.getElementById('returned-note');
-  banner.style.display = 'block';
-  noteEl.textContent = s.return_note ? `Reason: ${s.return_note}` : 'Please review and resubmit your timesheet.';
+  if (!name) { err.textContent = 'Please enter your full name above.'; err.style.display = 'block'; return; }
+  if (ssn.length !== 4) { err.textContent = 'Please enter your last 4 SSN above.'; err.style.display = 'block'; return; }
+  if (!month) { err.textContent = 'Please select a month.'; err.style.display = 'block'; return; }
+  if (!/^\d{4}$/.test(year)) { err.textContent = 'Please enter a valid 4-digit year.'; err.style.display = 'block'; return; }
+
+  btn.disabled = true; btn.textContent = 'Searching…';
+
+  const { data, error } = await sb.from('timesheets')
+    .select('*')
+    .ilike('employee_name', name)
+    .eq('ssn_last4', ssn)
+    .eq('month', month)
+    .eq('year', year)
+    .order('submitted_at', { ascending: false })
+    .limit(1);
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"><path d="M2 8a6 6 0 106-6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/><path d="M2 4v4h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Load Timesheet';
+
+  if (error || !data || data.length === 0) {
+    err.textContent = `No timesheet found for ${month} ${year}. Please check your details and try again.`;
+    err.style.display = 'block';
+    return;
+  }
+
+  const sheet = data[0];
+
+  /* Approved — cannot recall */
+  if (sheet.status === 'approved') {
+    err.style.display = 'none';
+    alert(`Your ${month} ${year} timesheet has been signed by the Chief Deputy and cannot be recalled. Please contact the Chief to return it for corrections.`);
+    return;
+  }
+
+  /* Pending, reviewed, or returned — load it */
+  existingSheetId = sheet.id;
+  showTimesheetScreen();
+  document.getElementById('f-name').value = name;
+  document.getElementById('f-ssn').value  = ssn;
+  prefillSheet(sheet, 'recalled');
+}
+
+/* ── Show timesheet screen ── */
+function showTimesheetScreen() {
+  document.getElementById('id-screen').style.display = 'none';
+  document.getElementById('timesheet-screen').style.display = 'block';
+}
+
+/* ── Prefill from existing sheet ── */
+function prefillSheet(s, mode) {
+  /* Show appropriate banner */
+  if (mode === 'returned') {
+    const banner = document.getElementById('returned-banner');
+    const noteEl = document.getElementById('returned-note');
+    banner.style.display = 'block';
+    noteEl.textContent = s.return_note ? `Reason: ${s.return_note}` : 'Please review and resubmit your timesheet.';
+  } else if (mode === 'recalled') {
+    document.getElementById('recalled-banner').style.display = 'block';
+  }
 
   /* Fill header fields */
   const monthSel = document.getElementById('f-month');
-  for (let i = 0; i < monthSel.options.length; i++) { if (monthSel.options[i].value === s.month) { monthSel.selectedIndex = i; break; } }
-  document.getElementById('f-year').value   = s.year || '';
+  for (let i = 0; i < monthSel.options.length; i++) { if (monthSel.options[i].text === s.month) { monthSel.selectedIndex = i; break; } }
+  document.getElementById('f-year').value = s.year || '';
   const statusSel = document.getElementById('f-status');
-  for (let i = 0; i < statusSel.options.length; i++) { if (statusSel.options[i].value === s.employment_status) { statusSel.selectedIndex = i; break; } }
+  for (let i = 0; i < statusSel.options.length; i++) { if (statusSel.options[i].text === s.employment_status) { statusSel.selectedIndex = i; break; } }
 
-  /* Build grid then fill in row data */
+  /* Build grid then fill rows */
   buildGrid();
   const rows = s.rows || [];
   rows.forEach(r => {
@@ -546,7 +656,7 @@ function buildRows() {
     const shifts=dayMap[d];
     if(!shifts||shifts.length===0){grid.push({day:String(d),start:'',end:'',total:'',comp:'',sick:'',notes:''});}
     else if(shifts.length===1){grid.push({day:String(d),start:shifts[0].start,end:shifts[0].end,total:shifts[0].total,comp:shifts[0].comp,sick:shifts[0].sick,notes:shifts[0].notes});}
-    else{let totalH=0,totalC=0,totalS=0;const parts=[];shifts.forEach((s,i)=>{totalH+=parseFloat(s.total)||0;totalC+=parseFloat(s.comp)||0;totalS+=parseFloat(s.sick)||0;if(s.start||s.end)parts.push(`${s.start||'?'}-${s.end||'?'}${s.notes?' ('+s.notes+')':''}${i>0?' cont.':''}`);}); grid.push({day:String(d),start:shifts[0].start,end:shifts[shifts.length-1].end,total:totalH>0?totalH.toFixed(2):'',comp:totalC>0?totalC.toFixed(2):'',sick:totalS>0?totalS.toFixed(2):'',notes:parts.join(' | ')});}
+    else{let totalH=0,totalC=0,totalS=0;const parts=[];shifts.forEach((s,i)=>{totalH+=parseFloat(s.total)||0;totalC+=parseFloat(s.comp)||0;totalS+=parseFloat(s.sick)||0;if(s.start||s.end)parts.push(`${s.start||'?'}-${s.end||'?'}${s.notes?' ('+s.notes+')':''}${i>0?' cont.':''}`);});grid.push({day:String(d),start:shifts[0].start,end:shifts[shifts.length-1].end,total:totalH>0?totalH.toFixed(2):'',comp:totalC>0?totalC.toFixed(2):'',sick:totalS>0?totalS.toFixed(2):'',notes:parts.join(' | ')});}
   }
   return grid;
 }
@@ -563,16 +673,14 @@ async function submitTimesheet() {
   const statusEl=document.getElementById('submit-status');
   btn.disabled=true;btn.innerHTML='Submitting&hellip;';
   statusEl.style.display='none';
-
   try {
-    /* If resubmitting a returned timesheet, delete the old one first */
-    if (returnedSheetId) {
-      await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${returnedSheetId}`, {
+    /* Delete existing sheet if recalling or resubmitting returned */
+    if (existingSheetId) {
+      await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${existingSheetId}`, {
         method: 'DELETE', headers: { 'apikey': SERVICE_KEY, 'Authorization': 'Bearer ' + SERVICE_KEY }
       });
-      returnedSheetId = null;
+      existingSheetId = null;
     }
-
     const res=await fetch('/.netlify/functions/submit-timesheet',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
     const json=await res.json();
     if(json.success){
@@ -580,6 +688,7 @@ async function submitTimesheet() {
       statusEl.textContent='✓ Timesheet submitted successfully! Your supervisor will review it shortly.';
       btn.innerHTML='✓ Submitted';
       document.getElementById('returned-banner').style.display='none';
+      document.getElementById('recalled-banner').style.display='none';
     } else { throw new Error(json.error||'Unknown error'); }
   } catch(err) {
     statusEl.style.cssText='display:block;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:12px;line-height:1.6;background:#fff0f0;border:1.5px solid #f0b0b0;color:#c0392b;';
