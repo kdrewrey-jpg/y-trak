@@ -15,7 +15,7 @@
   .badge { display: block; width: fit-content; margin: 0 auto 20px; background: #1a3a6b; color: #fff; font-size: 11px; padding: 3px 12px; border-radius: 20px; }
   .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
   label { font-size: 12px; color: #555; font-weight: bold; text-transform: uppercase; letter-spacing: 0.04em; }
-  input { background: #f7f7f7; border: 1px solid #ccc; border-radius: 7px; padding: 10px 12px; font-size: 15px; color: #111; width: 100%; }
+  input { background: #f7f7f7; border: 1px solid #ccc; border-radius: 7px; padding: 10px 12px; font-size: 15px; color: #111; width: 100%; font-family: Arial, sans-serif; }
   input:focus { outline: none; border-color: #1a5dc8; background: #fff; }
   .btn { width: 100%; padding: 12px; font-size: 15px; font-weight: bold; border: none; border-radius: 7px; background: #1a5dc8; color: #fff; cursor: pointer; margin-top: 8px; font-family: Arial, sans-serif; }
   .btn:hover { background: #154fa8; }
@@ -49,14 +49,14 @@ const sb = supabase.createClient(
 );
 
 sb.auth.getSession().then(({ data }) => {
-  if (data.session) window.location.href = '/dashboard.html';
+  if (data.session) redirectByRole(data.session.user.id);
 });
 
 async function doLogin() {
-  const email = document.getElementById('email').value.trim();
+  const email    = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
-  const btn = document.getElementById('login-btn');
-  const err = document.getElementById('error-msg');
+  const btn      = document.getElementById('login-btn');
+  const err      = document.getElementById('error-msg');
   err.style.display = 'none';
   if (!email || !password) { showErr('Please enter your email and password.'); return; }
   btn.disabled = true; btn.textContent = 'Signing in…';
@@ -66,13 +66,15 @@ async function doLogin() {
     btn.disabled = false; btn.textContent = 'Sign in';
     return;
   }
-  const { data: profile } = await sb.from('supervisors').select('id').eq('id', data.user.id).single();
-  if (!profile) {
-    await sb.auth.signOut();
-    showErr('Your account does not have supervisor access.');
-    btn.disabled = false; btn.textContent = 'Sign in';
-    return;
-  }
+  await redirectByRole(data.user.id);
+  btn.disabled = false; btn.textContent = 'Sign in';
+}
+
+async function redirectByRole(userId) {
+  const { data: profile } = await sb.from('supervisors').select('role').eq('id', userId).single();
+  if (!profile) { showErr('Your account does not have portal access.'); await sb.auth.signOut(); return; }
+  if (profile.role === 'reviewer')  { window.location.href = '/validate.html';  return; }
+  if (profile.role === 'payroll')   { window.location.href = '/payroll.html';   return; }
   window.location.href = '/dashboard.html';
 }
 
