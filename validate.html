@@ -26,10 +26,18 @@
   body.dark  thead { background: #0a1628; }
   body.light thead th { color: #c8d8f0; border-right: 1px solid rgba(255,255,255,0.08); }
   body.dark  thead th { color: #8aafd4; border-right: 1px solid rgba(255,255,255,0.06); }
+  body.light .pending-thead { background: #6b7280; }
+  body.dark  .pending-thead { background: #374151; }
+  body.light .pending-thead th { color: #f3f4f6; border-right: 1px solid rgba(255,255,255,0.08); }
+  body.dark  .pending-thead th { color: #d1d5db; border-right: 1px solid rgba(255,255,255,0.06); }
   body.light tbody tr:nth-child(even) { background: #f8fafc; }
   body.dark  tbody tr:nth-child(even) { background: #1e2229; }
   body.light tbody tr:hover { background: #dbeafe !important; }
   body.dark  tbody tr:hover { background: #1e3a5f !important; }
+  body.light .pending-row:nth-child(even) { background: #f9fafb; }
+  body.dark  .pending-row:nth-child(even) { background: #1e2229; }
+  body.light .pending-row:hover { background: #f3f4f6 !important; }
+  body.dark  .pending-row:hover { background: #2a2f38 !important; }
   body.light tbody td { border-right: 1px solid rgba(0,0,0,0.07); border-bottom: 1px solid rgba(0,0,0,0.07); color: #111; }
   body.dark  tbody td { border-right: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); color: #e8eaf0; }
   body.light .tbl-footer { background: #f4f6fa; border-top: 1px solid rgba(0,0,0,0.08); }
@@ -42,6 +50,8 @@
   body.dark  .mode-btn:hover { background: #2a2f38; }
   body.light .text2 { color: #6b7280; }
   body.dark  .text2 { color: #9aa3b2; }
+  body.light .section-title { color: #111827; }
+  body.dark  .section-title { color: #e8eaf0; }
   .topbar { padding: 13px 24px; display: flex; align-items: center; justify-content: space-between; }
   .topbar h1 { font-size: 16px; font-weight: bold; margin: 0 0 2px; }
   .topbar p { font-size: 12px; opacity: 0.75; margin: 0; }
@@ -63,6 +73,7 @@
   .num-blue  { color: #3b82f6; }
   .num-green { color: #10b981; }
   .num-amber { color: #f59e0b; }
+  .num-red   { color: #ef4444; }
   .toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
   .tb-btn { font-size: 12px; font-weight: 500; padding: 7px 13px; border-radius: 7px; cursor: pointer; display: flex; align-items: center; gap: 5px; white-space: nowrap; font-family: Arial, sans-serif; }
   .tb-btn.primary { background: #1a3a6b !important; color: #fff !important; border-color: #1a3a6b !important; }
@@ -70,7 +81,11 @@
   .tb-btn.success { background: #0f6e56 !important; color: #fff !important; border-color: #0f6e56 !important; }
   .tb-btn.success:hover { background: #085041 !important; }
   .cnt { background: rgba(255,255,255,0.25); color: #fff; font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 8px; margin-left: 2px; }
-  .tbl-outer { border-radius: 10px; overflow: hidden; }
+  .section-title { font-size: 13px; font-weight: bold; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+  .section-badge { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 8px; }
+  .badge-submitted { background: rgba(16,185,129,0.15); color: #10b981; border: 0.5px solid rgba(16,185,129,0.3); }
+  .badge-pending-count { background: rgba(239,68,68,0.12); color: #ef4444; border: 0.5px solid rgba(239,68,68,0.25); }
+  .tbl-outer { border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
   thead th { padding: 10px 10px; text-align: left; font-weight: 500; font-size: 11px; white-space: nowrap; overflow: hidden; }
   tbody tr { transition: background 0.1s; }
@@ -81,11 +96,13 @@
   .badge-pend { background: rgba(245,158,11,0.15); color: #d97706; border: 0.5px solid rgba(245,158,11,0.3); }
   .badge-val  { background: rgba(59,130,246,0.15); color: #3b82f6; border: 0.5px solid rgba(59,130,246,0.3); }
   .badge-appr { background: rgba(16,185,129,0.15); color: #10b981; border: 0.5px solid rgba(16,185,129,0.3); }
+  .badge-ret  { background: rgba(245,158,11,0.15); color: #d97706; border: 0.5px solid rgba(245,158,11,0.3); }
   .hrs-comp { font-weight: 500; color: #10b981; }
   .hrs-sick { font-weight: 500; color: #ef4444; }
+  .not-sub { color: #9ca3af; font-style: italic; font-size: 12px; }
   .tbl-footer { padding: 7px 12px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
   .loading { text-align: center; padding: 40px; }
-  .empty   { text-align: center; padding: 40px; }
+  .empty   { text-align: center; padding: 20px; font-style: italic; }
 </style>
 </head>
 <body class="light">
@@ -100,6 +117,7 @@
 
 <div class="container">
   <div class="card">
+
     <div class="inner-top">
       <div>
         <div class="page-title">Validation Spreadsheet</div>
@@ -127,13 +145,15 @@
       </div>
     </div>
 
+    <!-- Stats -->
     <div class="stat-grid">
-      <div class="stat-card"><div class="stat-num num-blue"  id="s-total">—</div><div class="stat-lbl text2">Total timesheets</div></div>
-      <div class="stat-card"><div class="stat-num"           id="s-pending">—</div><div class="stat-lbl text2">Awaiting validation</div></div>
-      <div class="stat-card"><div class="stat-num num-green" id="s-val">—</div><div class="stat-lbl text2">Validated</div></div>
-      <div class="stat-card"><div class="stat-num num-amber" id="s-hrs">—</div><div class="stat-lbl text2">Total hours</div></div>
+      <div class="stat-card"><div class="stat-num num-blue"  id="s-total">—</div><div class="stat-lbl text2">Total employees</div></div>
+      <div class="stat-card"><div class="stat-num num-green" id="s-submitted">—</div><div class="stat-lbl text2">Submitted</div></div>
+      <div class="stat-card"><div class="stat-num num-red"   id="s-missing">—</div><div class="stat-lbl text2">Not yet submitted</div></div>
+      <div class="stat-card"><div class="stat-num num-amber" id="s-val">—</div><div class="stat-lbl text2">Validated</div></div>
     </div>
 
+    <!-- Validation toolbar -->
     <div class="toolbar">
       <button class="tb-btn primary" onclick="selectAll()">
         <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
@@ -147,23 +167,29 @@
       </button>
     </div>
 
+    <!-- SUBMITTED TABLE -->
+    <div class="section-title section-title">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      Submitted Timesheets
+      <span class="section-badge badge-submitted" id="submitted-count">0</span>
+    </div>
     <div class="tbl-outer">
       <table>
         <thead>
           <tr>
             <th style="width:36px;text-align:center;"><input type="checkbox" id="chk-all" onchange="toggleAll(this)" style="cursor:pointer;accent-color:#3b82f6;"></th>
             <th style="width:95px;">Status</th>
-            <th style="min-width:170px;">Employee name</th>
+            <th style="min-width:160px;">Employee name</th>
+            <th style="width:60px;">SSN</th>
             <th style="width:82px;">Total hrs</th>
             <th style="width:82px;">Comp hrs</th>
             <th style="width:82px;">Sick hrs</th>
             <th style="width:95px;">Submitted</th>
-            <th style="width:105px;">Employment</th>
             <th style="width:110px;">Period</th>
           </tr>
         </thead>
-        <tbody id="tbl-body">
-          <tr><td colspan="9" class="loading text2">Loading timesheets…</td></tr>
+        <tbody id="submitted-body">
+          <tr><td colspan="9" class="loading text2">Loading…</td></tr>
         </tbody>
       </table>
       <div class="tbl-footer">
@@ -171,6 +197,28 @@
         <span class="text2" id="sel-label">0 selected</span>
       </div>
     </div>
+
+    <!-- PENDING SUBMISSION TABLE -->
+    <div class="section-title">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#ef4444" stroke-width="1.4" fill="none"/><path d="M8 5v3M8 11v.5" stroke="#ef4444" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Pending Submission
+      <span class="section-badge badge-pending-count" id="pending-count">0</span>
+    </div>
+    <div class="tbl-outer">
+      <table>
+        <thead class="pending-thead">
+          <tr>
+            <th style="min-width:160px;">Employee name</th>
+            <th style="width:60px;">SSN</th>
+            <th style="width:200px;">Status</th>
+          </tr>
+        </thead>
+        <tbody id="pending-body">
+          <tr><td colspan="3" class="loading text2">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
   </div>
 </div>
 
@@ -183,6 +231,34 @@ const sb = supabase.createClient(
 );
 const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3Z2ZvbndnZW9pZXZneHd2eGxnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTgzOTgwNCwiZXhwIjoyMDkxNDE1ODA0fQ.yzHKNyoZ85hj2xxjW_byLStr-O9FOCPna9OVXvzthWI';
 
+/* ── Master employee roster ── */
+const ROSTER = [
+  { name: 'Jerimaine Gooch',    ssn: '6587' },
+  { name: 'Thomas West',        ssn: '0430' },
+  { name: 'Taylor Byford',      ssn: '9212' },
+  { name: 'Tyler Wortham',      ssn: '8772' },
+  { name: 'Tony Hernandez',     ssn: '4330' },
+  { name: 'Dalton Coleman',     ssn: '9682' },
+  { name: 'Dalton Pelts',       ssn: '4320' },
+  { name: 'Abbigail Elza',      ssn: '8361' },
+  { name: 'Vernon Wilson',      ssn: '7525' },
+  { name: 'Cody Greer',         ssn: '1308' },
+  { name: 'Mike Lovelace Sr',   ssn: '1999' },
+  { name: 'Chris Jones',        ssn: '4350' },
+  { name: 'Randy Coleman',      ssn: '8370' },
+  { name: 'Ashley Jennings',    ssn: '4584' },
+  { name: 'Mitch Steen',        ssn: '8301' },
+  { name: 'Kurt Savage',        ssn: '5400' },
+  { name: 'Jeremy Turner',      ssn: '4998' },
+  { name: 'Terrence Turner',    ssn: '9967' },
+  { name: 'Brad Easley',        ssn: '0996' },
+  { name: 'Kelly Drewrey',      ssn: '1661' },
+  { name: 'Jerry Ferguson',     ssn: '7335' },
+  { name: 'Jesse James',        ssn: '5448' },
+  { name: 'Teresa Hernandez',   ssn: '6889' },
+  { name: 'Sandra Williams',    ssn: '4106' },
+];
+
 let allSheets = [], filtered = [];
 let isDark = false;
 const sel = new Set();
@@ -194,7 +270,11 @@ async function init() {
 
 async function loadSheets() {
   const { data, error } = await sb.from('timesheets').select('*').order('submitted_at', { ascending: false });
-  if (error) { document.getElementById('tbl-body').innerHTML = '<tr><td colspan="9" class="empty text2">Error loading timesheets.</td></tr>'; return; }
+  if (error) {
+    document.getElementById('submitted-body').innerHTML = '<tr><td colspan="9" class="empty text2">Error loading timesheets.</td></tr>';
+    document.getElementById('pending-body').innerHTML   = '<tr><td colspan="3" class="empty text2">Error loading timesheets.</td></tr>';
+    return;
+  }
   allSheets = data || [];
   setDefaultFilter();
   applyFilter();
@@ -220,7 +300,7 @@ function applyFilter() {
   });
   sel.clear();
   document.getElementById('chk-all').checked = false;
-  renderTable();
+  renderTables();
   const label = [fm, fy].filter(Boolean).join(' ') || 'All periods';
   document.getElementById('period-label').textContent = label;
 }
@@ -228,62 +308,100 @@ function applyFilter() {
 function badge(s) {
   if (s === 'reviewed') return '<span class="badge badge-val">Validated</span>';
   if (s === 'approved') return '<span class="badge badge-appr">Approved</span>';
+  if (s === 'returned') return '<span class="badge badge-ret">Returned</span>';
   return '<span class="badge badge-pend">Pending</span>';
 }
-
 function hrsCell(v, cls) {
   if (!v || v === '0.00') return `<span class="text2">—</span>`;
   return `<span class="${cls}">${v}</span>`;
 }
 
-function renderTable() {
-  const tbody = document.getElementById('tbl-body');
-  if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" class="empty text2">No timesheets found for this period.</td></tr>';
-    updateStats(); return;
+function renderTables() {
+  /* Match each roster entry to a submitted timesheet using SSN as primary key */
+  const submittedBody = document.getElementById('submitted-body');
+  const pendingBody   = document.getElementById('pending-body');
+
+  const submittedRows = [];
+  const pendingRows   = [];
+
+  ROSTER.forEach(emp => {
+    /* Match by SSN first, fall back to name */
+    const sheet = filtered.find(s => s.ssn_last4 === emp.ssn) ||
+                  filtered.find(s => s.employee_name?.toLowerCase() === emp.name.toLowerCase());
+    if (sheet) {
+      submittedRows.push({ emp, sheet });
+    } else {
+      pendingRows.push(emp);
+    }
+  });
+
+  /* Also include any submitted timesheets that don't match roster (unknown employees) */
+  const matchedIds = new Set(submittedRows.map(r => r.sheet.id));
+  filtered.forEach(s => {
+    if (!matchedIds.has(s.id)) {
+      submittedRows.push({ emp: { name: s.employee_name, ssn: s.ssn_last4 }, sheet: s, unknown: true });
+    }
+  });
+
+  /* Update counts */
+  document.getElementById('s-total').textContent     = ROSTER.length;
+  document.getElementById('s-submitted').textContent = submittedRows.length;
+  document.getElementById('s-missing').textContent   = pendingRows.length;
+  document.getElementById('s-val').textContent       = filtered.filter(s => s.status === 'reviewed' || s.status === 'approved').length;
+  document.getElementById('submitted-count').textContent = submittedRows.length;
+  document.getElementById('pending-count').textContent   = pendingRows.length;
+
+  /* Render submitted table */
+  if (submittedRows.length === 0) {
+    submittedBody.innerHTML = '<tr><td colspan="9" class="empty text2">No timesheets submitted for this period yet.</td></tr>';
+  } else {
+    submittedBody.innerHTML = submittedRows.map(({ emp, sheet, unknown }) => {
+      const date = sheet.submitted_at ? new Date(sheet.submitted_at).toLocaleDateString() : '—';
+      const canSelect = sheet.status === 'pending' || sheet.status === 'returned';
+      return `<tr>
+        <td style="text-align:center;">
+          <input type="checkbox" onchange="toggleRow('${sheet.id}',this)" ${sel.has(sheet.id)?'checked':''} style="cursor:pointer;accent-color:#3b82f6;" ${!canSelect?'disabled':''}>
+        </td>
+        <td>${badge(sheet.status)}</td>
+        <td><a class="emp-link" onclick="openSheet('${sheet.id}')">${emp.name}${unknown?' <span style="font-size:10px;color:#9ca3af;">(not on roster)</span>':''}</a></td>
+        <td class="text2">${emp.ssn}</td>
+        <td>${sheet.total_hours||'—'}</td>
+        <td>${hrsCell(sheet.comp_hours,'hrs-comp')}</td>
+        <td>${hrsCell(sheet.sick_hours,'hrs-sick')}</td>
+        <td class="text2">${date}</td>
+        <td class="text2">${(sheet.month||'')} ${(sheet.year||'')}</td>
+      </tr>`;
+    }).join('');
   }
-  tbody.innerHTML = filtered.map(s => {
-    const date = s.submitted_at ? new Date(s.submitted_at).toLocaleDateString() : '—';
-    const canSelect = s.status === 'pending';
-    return `<tr>
-      <td style="text-align:center;">
-        <input type="checkbox" onchange="toggleRow('${s.id}',this)" ${sel.has(s.id)?'checked':''} style="cursor:pointer;accent-color:#3b82f6;" ${!canSelect?'disabled':''}>
-      </td>
-      <td>${badge(s.status)}</td>
-      <td><a class="emp-link" onclick="openSheet('${s.id}')">${s.employee_name}</a></td>
-      <td>${s.total_hours||'—'}</td>
-      <td>${hrsCell(s.comp_hours,'hrs-comp')}</td>
-      <td>${hrsCell(s.sick_hours,'hrs-sick')}</td>
-      <td class="text2">${date}</td>
-      <td class="text2">${s.employment_status||'—'}</td>
-      <td class="text2">${(s.month||'')} ${(s.year||'')}</td>
-    </tr>`;
-  }).join('');
-  updateStats();
+
+  /* Render pending table */
+  if (pendingRows.length === 0) {
+    pendingBody.innerHTML = '<tr><td colspan="3" class="empty" style="color:#10b981;font-style:italic;">&#10003; All employees have submitted their timesheets!</td></tr>';
+  } else {
+    pendingBody.innerHTML = pendingRows.map(emp => `
+      <tr class="pending-row">
+        <td>${emp.name}</td>
+        <td class="text2">${emp.ssn}</td>
+        <td class="not-sub">Not yet submitted</td>
+      </tr>`).join('');
+  }
+
+  updateSelLabel();
 }
 
-function updateStats() {
-  const pending = filtered.filter(s => s.status === 'pending').length;
-  const valCnt  = filtered.filter(s => s.status === 'reviewed' || s.status === 'approved').length;
-  const total   = filtered.reduce((acc, s) => acc + (parseFloat(s.total_hours)||0), 0);
-  document.getElementById('s-total').textContent   = filtered.length;
-  document.getElementById('s-pending').textContent = pending;
-  document.getElementById('s-val').textContent     = valCnt;
-  document.getElementById('s-hrs').textContent     = total.toFixed(2);
+function updateSelLabel() {
+  const pending = filtered.filter(s => s.status === 'pending' || s.status === 'returned').length;
   document.getElementById('sel-count').textContent = sel.size;
   document.getElementById('sel-label').textContent = `${sel.size} of ${pending} selected`;
 }
 
-function toggleRow(id, cb) { if (cb.checked) sel.add(id); else sel.delete(id); updateStats(); }
-
+function toggleRow(id, cb) { if (cb.checked) sel.add(id); else sel.delete(id); updateSelLabel(); }
 function toggleAll(cb) {
-  filtered.forEach(s => { if (s.status === 'pending') { if (cb.checked) sel.add(s.id); else sel.delete(s.id); } });
-  renderTable();
+  filtered.forEach(s => { if (s.status === 'pending' || s.status === 'returned') { if (cb.checked) sel.add(s.id); else sel.delete(s.id); } });
+  renderTables();
 }
-
-function selectAll() { filtered.forEach(s => { if (s.status === 'pending') sel.add(s.id); }); renderTable(); }
-
-function clearAll() { sel.clear(); document.getElementById('chk-all').checked = false; renderTable(); }
+function selectAll() { filtered.forEach(s => { if (s.status === 'pending' || s.status === 'returned') sel.add(s.id); }); renderTables(); }
+function clearAll() { sel.clear(); document.getElementById('chk-all').checked = false; renderTables(); }
 
 async function submitValidations() {
   if (sel.size === 0) { alert('Please select at least one timesheet to validate.'); return; }
@@ -306,7 +424,6 @@ async function submitValidations() {
 }
 
 function openSheet(id) { window.location.href = `/review.html?id=${id}`; }
-
 function signOut() { sessionStorage.removeItem('ytrak-staff'); window.location.href = '/supervisor.html'; }
 
 function toggleMode() {
