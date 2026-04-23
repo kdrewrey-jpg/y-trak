@@ -182,7 +182,6 @@ function renderTable() {
   document.getElementById('sheet-empty').style.display = 'none';
 }
 
-/* ── PDF builder ── */
 function getSigDimensions(src, maxW, maxH) {
   return new Promise(resolve => {
     const img = new Image();
@@ -232,7 +231,6 @@ async function buildSheetPDF(doc, d, startY) {
   doc.setTextColor(0,0,0);
 }
 
-/* ── Single print ── */
 async function printSingle(id) {
   const s = allSheets.find(x => x.id === id);
   if (!s) return;
@@ -245,7 +243,6 @@ async function printSingle(id) {
   if (win) win.onload = () => { win.focus(); win.print(); };
 }
 
-/* ── Bulk print all filtered ── */
 async function bulkPrint() {
   if (filtered.length === 0) { alert('No timesheets to print. Adjust your filter and try again.'); return; }
   const fm = document.getElementById('filter-month').value || 'All';
