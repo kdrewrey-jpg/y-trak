@@ -237,8 +237,7 @@ let uploadedSig = null;
 const id = new URLSearchParams(window.location.search).get('id');
 
 function goBack() {
-  const role = sessionStorage.getItem('ytrak-staff');
-  window.location.href = role === 'supervisor' ? '/dashboard.html' : '/validate.html';
+  window.location.href = '/validate.html';
 }
 
 async function init() {
@@ -329,12 +328,7 @@ function renderSheet(d) {
   buildActionBar();
 }
 
-/* ── Return to employee modal ── */
-function openReturnModal() {
-  document.getElementById('return-your-name').value = '';
-  document.getElementById('return-note').value = '';
-  document.getElementById('return-modal').classList.add('open');
-}
+function openReturnModal() { document.getElementById('return-your-name').value = ''; document.getElementById('return-note').value = ''; document.getElementById('return-modal').classList.add('open'); }
 function closeReturnModal() { document.getElementById('return-modal').classList.remove('open'); }
 
 async function confirmReturn() {
@@ -345,35 +339,21 @@ async function confirmReturn() {
     const res = await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${sheetData.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'apikey': SERVICE_KEY, 'Authorization': 'Bearer ' + SERVICE_KEY, 'Prefer': 'return=minimal' },
-      body: JSON.stringify({
-        status: 'returned',
-        return_note: note || null,
-        reviewed_by_name: null,
-        reviewed_at: null,
-        approved_by_name: null,
-        approved_at: null,
-        dep_signature: null
-      })
+      body: JSON.stringify({ status: 'returned', return_note: note || null, reviewed_by_name: null, reviewed_at: null, approved_by_name: null, approved_at: null, dep_signature: null })
     });
     if (!res.ok) throw new Error('Failed — status ' + res.status);
-    sheetData.status = 'returned';
-    sheetData.return_note = note || null;
-    sheetData.reviewed_by_name = null;
-    sheetData.approved_by_name = null;
-    sheetData.dep_signature = null;
+    sheetData.status = 'returned'; sheetData.return_note = note || null;
+    sheetData.reviewed_by_name = null; sheetData.approved_by_name = null; sheetData.dep_signature = null;
     document.getElementById('banner-reviewed').style.display = 'none';
     document.getElementById('banner-approved').style.display = 'none';
     const b = document.getElementById('banner-returned');
-    b.textContent = `⚠ Returned to employee${note ? ': ' + note : ''} — awaiting resubmission`;
-    b.style.display = 'block';
+    b.textContent = `⚠ Returned to employee${note ? ': ' + note : ''} — awaiting resubmission`; b.style.display = 'block';
     document.getElementById('sheet-title').innerHTML = `${sheetData.employee_name} — ${sheetData.month} ${sheetData.year} ${getBadge('returned')}`;
-    closeReturnModal();
-    buildActionBar();
+    closeReturnModal(); buildActionBar();
     alert(`Timesheet returned to ${sheetData.employee_name}. They will see it when they next log in.`);
   } catch(err) { alert('Failed: ' + err.message); }
 }
 
-/* ── Validate modal ── */
 function openValidateModal() { document.getElementById('validator-name').value = ''; document.getElementById('validate-modal').classList.add('open'); }
 function closeValidateModal() { document.getElementById('validate-modal').classList.remove('open'); }
 
@@ -393,12 +373,10 @@ async function confirmValidation() {
     b.textContent = `✓ Validated by ${name} on ${new Date(now).toLocaleString()}`; b.style.display = 'block';
     document.getElementById('banner-returned').style.display = 'none';
     document.getElementById('sheet-title').innerHTML = `${sheetData.employee_name} — ${sheetData.month} ${sheetData.year} ${getBadge('reviewed')}`;
-    closeValidateModal();
-    buildActionBar();
+    closeValidateModal(); buildActionBar();
   } catch(err) { alert('Validation failed: ' + err.message); }
 }
 
-/* ── Unvalidate ── */
 async function unvalidateSheet() {
   if (!confirm('Return this timesheet to pending status?')) return;
   try {
@@ -415,7 +393,6 @@ async function unvalidateSheet() {
   } catch(err) { alert('Failed: ' + err.message); }
 }
 
-/* ── Canvas ── */
 function setupCanvas() {
   const canvas=document.getElementById('sig-canvas'),wrap=document.getElementById('canvas-wrap'),hint=document.getElementById('canvas-hint');
   function resize(){const dpr=window.devicePixelRatio||1,w=wrap.clientWidth;canvas.width=w*dpr;canvas.height=120*dpr;canvas.style.width=w+'px';canvas.style.height='120px';const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);ctx.strokeStyle='#111';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';}
