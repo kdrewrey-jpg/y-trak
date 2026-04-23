@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Y-TRAK Validation</title>
+<title>Y-TRAK Staff Portal</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; }
@@ -16,10 +16,6 @@
   body.dark  .card { background: #1a1d23; border: 0.5px solid rgba(255,255,255,0.08); }
   body.light .stat-card { background: #f4f6fa; border: 0.5px solid rgba(0,0,0,0.08); }
   body.dark  .stat-card { background: #22262e; border: 0.5px solid rgba(255,255,255,0.08); }
-  body.light .tb-btn { background: #f4f6fa; border: 0.5px solid rgba(0,0,0,0.15); color: #111; }
-  body.dark  .tb-btn { background: #22262e; border: 0.5px solid rgba(255,255,255,0.1); color: #e8eaf0; }
-  body.light .tb-btn:hover { background: #e8edf5; }
-  body.dark  .tb-btn:hover { background: #2a2f38; }
   body.light .tbl-outer { border: 1px solid rgba(0,0,0,0.1); }
   body.dark  .tbl-outer { border: 1px solid rgba(255,255,255,0.08); }
   body.light thead { background: #1a3a6b; }
@@ -50,8 +46,6 @@
   body.dark  .mode-btn:hover { background: #2a2f38; }
   body.light .text2 { color: #6b7280; }
   body.dark  .text2 { color: #9aa3b2; }
-  body.light .section-title { color: #111827; }
-  body.dark  .section-title { color: #e8eaf0; }
   .topbar { padding: 13px 24px; display: flex; align-items: center; justify-content: space-between; }
   .topbar h1 { font-size: 16px; font-weight: bold; margin: 0 0 2px; }
   .topbar p { font-size: 12px; opacity: 0.75; margin: 0; }
@@ -74,13 +68,6 @@
   .num-green { color: #10b981; }
   .num-amber { color: #f59e0b; }
   .num-red   { color: #ef4444; }
-  .toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
-  .tb-btn { font-size: 12px; font-weight: 500; padding: 7px 13px; border-radius: 7px; cursor: pointer; display: flex; align-items: center; gap: 5px; white-space: nowrap; font-family: Arial, sans-serif; }
-  .tb-btn.primary { background: #1a3a6b !important; color: #fff !important; border-color: #1a3a6b !important; }
-  .tb-btn.primary:hover { background: #14305a !important; }
-  .tb-btn.success { background: #0f6e56 !important; color: #fff !important; border-color: #0f6e56 !important; }
-  .tb-btn.success:hover { background: #085041 !important; }
-  .cnt { background: rgba(255,255,255,0.25); color: #fff; font-size: 10px; font-weight: 500; padding: 1px 6px; border-radius: 8px; margin-left: 2px; }
   .section-title { font-size: 13px; font-weight: bold; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
   .section-badge { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 8px; }
   .badge-submitted { background: rgba(16,185,129,0.15); color: #10b981; border: 0.5px solid rgba(16,185,129,0.3); }
@@ -102,14 +89,14 @@
   .not-sub { color: #9ca3af; font-style: italic; font-size: 12px; }
   .tbl-footer { padding: 7px 12px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
   .loading { text-align: center; padding: 40px; }
-  .empty   { text-align: center; padding: 20px; font-style: italic; }
+  .empty { text-align: center; padding: 20px; font-style: italic; }
 </style>
 </head>
 <body class="light">
 
 <div class="topbar">
   <div>
-    <h1>Y-TRAK — Validation Portal</h1>
+    <h1>Y-TRAK — Staff Portal</h1>
     <p>Yalobusha County Sheriff's Department</p>
   </div>
   <button class="sign-out" onclick="signOut()">Sign out</button>
@@ -120,7 +107,7 @@
 
     <div class="inner-top">
       <div>
-        <div class="page-title">Validation Spreadsheet</div>
+        <div class="page-title">Timesheet Overview</div>
         <div class="page-sub text2" id="period-label">Loading…</div>
       </div>
       <div class="top-right">
@@ -153,22 +140,8 @@
       <div class="stat-card"><div class="stat-num num-amber" id="s-val">—</div><div class="stat-lbl text2">Validated</div></div>
     </div>
 
-    <!-- Validation toolbar -->
-    <div class="toolbar">
-      <button class="tb-btn primary" onclick="selectAll()">
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-        Select all for validation
-      </button>
-      <button class="tb-btn" onclick="clearAll()">Clear selections</button>
-      <button class="tb-btn success" onclick="submitValidations()">
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-        Submit validations
-        <span class="cnt" id="sel-count">0</span>
-      </button>
-    </div>
-
     <!-- SUBMITTED TABLE -->
-    <div class="section-title section-title">
+    <div class="section-title">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
       Submitted Timesheets
       <span class="section-badge badge-submitted" id="submitted-count">0</span>
@@ -177,7 +150,6 @@
       <table>
         <thead>
           <tr>
-            <th style="width:36px;text-align:center;"><input type="checkbox" id="chk-all" onchange="toggleAll(this)" style="cursor:pointer;accent-color:#3b82f6;"></th>
             <th style="width:95px;">Status</th>
             <th style="min-width:160px;">Employee name</th>
             <th style="width:60px;">SSN</th>
@@ -189,12 +161,11 @@
           </tr>
         </thead>
         <tbody id="submitted-body">
-          <tr><td colspan="9" class="loading text2">Loading…</td></tr>
+          <tr><td colspan="8" class="loading text2">Loading…</td></tr>
         </tbody>
       </table>
       <div class="tbl-footer">
         <span class="text2">* Click an employee name to open their full timesheet</span>
-        <span class="text2" id="sel-label">0 selected</span>
       </div>
     </div>
 
@@ -229,10 +200,7 @@ const sb = supabase.createClient(
   'https://kwgfonwgeoievgxwvxlg.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3Z2ZvbndnZW9pZXZneHd2eGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4Mzk4MDQsImV4cCI6MjA5MTQxNTgwNH0.KrH-loytrritpSgy6MVBmT0KyyodDp27ZLSATm1dGsM'
 );
-const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3Z2ZvbndnZW9pZXZneHd2eGxnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTgzOTgwNCwiZXhwIjoyMDkxNDE1ODA0fQ.yzHKNyoZ85hj2xxjW_byLStr-O9FOCPna9OVXvzthWI';
 
-/* ── Master employee roster ── */
-const ROSTER = [
 const ROSTER = [
   { name: 'Jerimaine Gooch',    ssn: '6587' },
   { name: 'Thomas West',        ssn: '0430' },
@@ -265,11 +233,9 @@ const ROSTER = [
   { name: 'Rickey Pulley',      ssn: '5251' },
   { name: 'Garrett Alston',     ssn: '7348' },
 ];
-];
 
 let allSheets = [], filtered = [];
 let isDark = false;
-const sel = new Set();
 
 async function init() {
   await sb.auth.signOut();
@@ -279,7 +245,7 @@ async function init() {
 async function loadSheets() {
   const { data, error } = await sb.from('timesheets').select('*').order('submitted_at', { ascending: false });
   if (error) {
-    document.getElementById('submitted-body').innerHTML = '<tr><td colspan="9" class="empty text2">Error loading timesheets.</td></tr>';
+    document.getElementById('submitted-body').innerHTML = '<tr><td colspan="8" class="empty text2">Error loading timesheets.</td></tr>';
     document.getElementById('pending-body').innerHTML   = '<tr><td colspan="3" class="empty text2">Error loading timesheets.</td></tr>';
     return;
   }
@@ -306,8 +272,6 @@ function applyFilter() {
     if (fy && s.year  !== fy) return false;
     return true;
   });
-  sel.clear();
-  document.getElementById('chk-all').checked = false;
   renderTables();
   const label = [fm, fy].filter(Boolean).join(' ') || 'All periods';
   document.getElementById('period-label').textContent = label;
@@ -325,7 +289,6 @@ function hrsCell(v, cls) {
 }
 
 function renderTables() {
-  /* Match each roster entry to a submitted timesheet using SSN as primary key */
   const submittedBody = document.getElementById('submitted-body');
   const pendingBody   = document.getElementById('pending-body');
 
@@ -333,7 +296,6 @@ function renderTables() {
   const pendingRows   = [];
 
   ROSTER.forEach(emp => {
-    /* Match by SSN first, fall back to name */
     const sheet = filtered.find(s => s.ssn_last4 === emp.ssn) ||
                   filtered.find(s => s.employee_name?.toLowerCase() === emp.name.toLowerCase());
     if (sheet) {
@@ -343,7 +305,6 @@ function renderTables() {
     }
   });
 
-  /* Also include any submitted timesheets that don't match roster (unknown employees) */
   const matchedIds = new Set(submittedRows.map(r => r.sheet.id));
   filtered.forEach(s => {
     if (!matchedIds.has(s.id)) {
@@ -351,7 +312,6 @@ function renderTables() {
     }
   });
 
-  /* Update counts */
   document.getElementById('s-total').textContent     = ROSTER.length;
   document.getElementById('s-submitted').textContent = submittedRows.length;
   document.getElementById('s-missing').textContent   = pendingRows.length;
@@ -359,30 +319,24 @@ function renderTables() {
   document.getElementById('submitted-count').textContent = submittedRows.length;
   document.getElementById('pending-count').textContent   = pendingRows.length;
 
-  /* Render submitted table */
   if (submittedRows.length === 0) {
-    submittedBody.innerHTML = '<tr><td colspan="9" class="empty text2">No timesheets submitted for this period yet.</td></tr>';
+    submittedBody.innerHTML = '<tr><td colspan="8" class="empty text2">No timesheets submitted for this period yet.</td></tr>';
   } else {
     submittedBody.innerHTML = submittedRows.map(({ emp, sheet, unknown }) => {
       const date = sheet.submitted_at ? new Date(sheet.submitted_at).toLocaleDateString() : '—';
-      const canSelect = sheet.status === 'pending' || sheet.status === 'returned';
       return `<tr>
-        <td style="text-align:center;">
-          <input type="checkbox" onchange="toggleRow('${sheet.id}',this)" ${sel.has(sheet.id)?'checked':''} style="cursor:pointer;accent-color:#3b82f6;" ${!canSelect?'disabled':''}>
-        </td>
         <td>${badge(sheet.status)}</td>
-        <td><a class="emp-link" onclick="openSheet('${sheet.id}')">${emp.name}${unknown?' <span style="font-size:10px;color:#9ca3af;">(not on roster)</span>':''}</a></td>
+        <td><a class="emp-link" onclick="openSheet('${sheet.id}')">${emp.name}${unknown ? ' <span style="font-size:10px;color:#9ca3af;">(not on roster)</span>' : ''}</a></td>
         <td class="text2">${emp.ssn}</td>
-        <td>${sheet.total_hours||'—'}</td>
-        <td>${hrsCell(sheet.comp_hours,'hrs-comp')}</td>
-        <td>${hrsCell(sheet.sick_hours,'hrs-sick')}</td>
+        <td>${sheet.total_hours || '—'}</td>
+        <td>${hrsCell(sheet.comp_hours, 'hrs-comp')}</td>
+        <td>${hrsCell(sheet.sick_hours, 'hrs-sick')}</td>
         <td class="text2">${date}</td>
-        <td class="text2">${(sheet.month||'')} ${(sheet.year||'')}</td>
+        <td class="text2">${(sheet.month || '')} ${(sheet.year || '')}</td>
       </tr>`;
     }).join('');
   }
 
-  /* Render pending table */
   if (pendingRows.length === 0) {
     pendingBody.innerHTML = '<tr><td colspan="3" class="empty" style="color:#10b981;font-style:italic;">&#10003; All employees have submitted their timesheets!</td></tr>';
   } else {
@@ -393,42 +347,6 @@ function renderTables() {
         <td class="not-sub">Not yet submitted</td>
       </tr>`).join('');
   }
-
-  updateSelLabel();
-}
-
-function updateSelLabel() {
-  const pending = filtered.filter(s => s.status === 'pending' || s.status === 'returned').length;
-  document.getElementById('sel-count').textContent = sel.size;
-  document.getElementById('sel-label').textContent = `${sel.size} of ${pending} selected`;
-}
-
-function toggleRow(id, cb) { if (cb.checked) sel.add(id); else sel.delete(id); updateSelLabel(); }
-function toggleAll(cb) {
-  filtered.forEach(s => { if (s.status === 'pending' || s.status === 'returned') { if (cb.checked) sel.add(s.id); else sel.delete(s.id); } });
-  renderTables();
-}
-function selectAll() { filtered.forEach(s => { if (s.status === 'pending' || s.status === 'returned') sel.add(s.id); }); renderTables(); }
-function clearAll() { sel.clear(); document.getElementById('chk-all').checked = false; renderTables(); }
-
-async function submitValidations() {
-  if (sel.size === 0) { alert('Please select at least one timesheet to validate.'); return; }
-  if (!confirm(`Validate ${sel.size} timesheet(s)? They will be moved to the approval queue.`)) return;
-  const now = new Date().toISOString();
-  const ids = Array.from(sel);
-  let success = 0, failed = 0;
-  for (const id of ids) {
-    const res = await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'apikey': SERVICE_KEY, 'Authorization': 'Bearer ' + SERVICE_KEY, 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ status: 'reviewed', reviewed_by_name: 'Reviewer', reviewed_at: now })
-    });
-    if (res.ok) success++; else failed++;
-  }
-  if (failed > 0) alert(`${success} validated. ${failed} failed — please try again.`);
-  else alert(`${success} timesheet(s) validated and moved to the approval queue!`);
-  sel.clear();
-  await loadSheets();
 }
 
 function openSheet(id) { window.location.href = `/review.html?id=${id}`; }
