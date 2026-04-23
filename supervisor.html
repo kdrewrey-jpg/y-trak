@@ -23,7 +23,7 @@
 <div class="card">
   <p class="logo">Y-TRAK</p>
   <p class="dept">Yalobusha County Sheriff's Department</p>
-  <p class="tag">Staff Portal</p>
+  <p class="tag" id="portal-tag">Staff Portal</p>
   <span class="badge">Authorized Personnel Only</span><br><br>
   <input type="password" class="pin-input" id="pin" maxlength="10" inputmode="numeric" placeholder="•••••" onkeydown="if(event.key==='Enter') checkPin()">
   <button class="pin-btn" onclick="checkPin()">Enter</button>
@@ -44,6 +44,20 @@ function checkPin() {
     document.getElementById('pin').focus();
   }
 }
+
+/* Update label as user types to hint which portal they're entering */
+document.getElementById('pin').addEventListener('input', function() {
+  const val = this.value.trim();
+  const tag = document.getElementById('portal-tag');
+  if (val === '38922') {
+    tag.textContent = 'Payroll Portal';
+  } else if (val === '38655' || val === '11803') {
+    tag.textContent = 'Staff Portal';
+  } else {
+    tag.textContent = 'Staff Portal';
+  }
+});
+
 document.addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
 
 const role = sessionStorage.getItem('ytrak-staff');
