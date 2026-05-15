@@ -26,7 +26,8 @@
   .id-screen { display: none; align-items: center; justify-content: center; min-height: 100vh; margin: -16px; background: #f0f2f5; }
   .id-card { background: #fff; border: 1px solid #ddd; border-radius: 14px; padding: 36px 32px; width: 100%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
   .id-title { font-size: 18px; font-weight: 800; color: #1a3a6b; margin: 0 0 4px; }
-  .id-sub { font-size: 12px; color: #888; margin: 0 0 24px; }
+  .id-sub { font-size: 12px; color: #888; margin: 0 0 16px; }
+  .due-banner { background: #c0392b; color: #fff; border-radius: 8px; padding: 10px 14px; font-size: 13px; font-weight: bold; text-align: center; margin-bottom: 18px; display: none; line-height: 1.5; }
   .id-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
   .id-field label { font-size: 11px; font-weight: bold; color: #555; text-transform: uppercase; letter-spacing: 0.05em; }
   .id-field input { background: #f7f8fa; border: 1.5px solid #e0e3e8; border-radius: 8px; padding: 11px 12px; font-size: 15px; color: #111; width: 100%; font-family: Arial, sans-serif; }
@@ -44,16 +45,6 @@
   .id-error { background: #fff0f0; border: 1px solid #f0b0b0; border-radius: 8px; padding: 9px 14px; font-size: 13px; color: #a00; margin-top: 12px; display: none; }
   .recall-section { display: none; margin-top: 4px; }
   .recall-section .recall-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-
-  /* Due date popup */
-  .due-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
-  .due-overlay.open { display: flex; }
-  .due-modal { background: #fff; border-radius: 14px; padding: 32px 28px; width: 100%; max-width: 380px; margin: 16px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
-  .due-icon { font-size: 36px; margin-bottom: 12px; }
-  .due-title { font-size: 13px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 8px; }
-  .due-message { font-size: 20px; font-weight: 800; color: #1a3a6b; margin: 0 0 24px; line-height: 1.4; }
-  .due-btn { width: 100%; padding: 12px; font-size: 15px; font-weight: bold; background: #1a5dc8; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-family: Arial, sans-serif; }
-  .due-btn:hover { background: #154fa8; }
 
   /* Timesheet */
   .timesheet-screen { display: none; max-width: 900px; margin: 0 auto; }
@@ -133,16 +124,6 @@
 </head>
 <body>
 
-<!-- Due Date Popup -->
-<div class="due-overlay" id="due-overlay">
-  <div class="due-modal">
-    <div class="due-icon">📅</div>
-    <p class="due-title">Timesheet Reminder</p>
-    <p class="due-message" id="due-message"></p>
-    <button class="due-btn" onclick="closeDuePopup()">Got it</button>
-  </div>
-</div>
-
 <!-- PIN Screen -->
 <div class="pin-screen" id="pin-screen">
   <div class="pin-card">
@@ -160,6 +141,7 @@
   <div class="id-card">
     <p class="id-title">Y-TRAK</p>
     <p class="id-sub">Yalobusha County Sheriff's Department — Please identify yourself</p>
+    <div class="due-banner" id="due-banner"></div>
     <div class="id-field">
       <label>Full Name <span style="color:#e53e3e">*</span></label>
       <input type="text" id="id-name" placeholder="Enter your full name" autocomplete="name">
@@ -345,20 +327,18 @@ const CORRECT_PIN = '38965';
 let sigData = null;
 let existingSheetId = null;
 
-/* ── Due date popup ── */
-async function checkDueDate() {
-  if (sessionStorage.getItem('ytrak-due-shown')) return;
+/* ── Load due date banner ── */
+async function loadDueBanner() {
   try {
     const { data } = await sb.from('settings').select('*').eq('id', 'global').single();
     if (data && data.due_month && data.due_year && data.due_date) {
       const formatted = new Date(data.due_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-      document.getElementById('due-message').textContent = `Timesheets For ${data.due_month} ${data.due_year} Due ${formatted}.`;
-      document.getElementById('due-overlay').classList.add('open');
-      sessionStorage.setItem('ytrak-due-shown', '1');
+      const banner = document.getElementById('due-banner');
+      banner.textContent = `📅 Timesheets For ${data.due_month} ${data.due_year} Due ${formatted}`;
+      banner.style.display = 'block';
     }
   } catch(e) {}
 }
-function closeDuePopup() { document.getElementById('due-overlay').classList.remove('open'); }
 
 /* ── PIN ── */
 function checkPin() {
@@ -367,7 +347,7 @@ function checkPin() {
     document.getElementById('pin-screen').style.display = 'none';
     document.getElementById('id-screen').style.display = 'flex';
     sessionStorage.setItem('ytrak-auth', '1');
-    checkDueDate();
+    loadDueBanner();
     document.getElementById('id-name').focus();
   } else {
     document.getElementById('pin-error').style.display = 'block';
@@ -380,7 +360,7 @@ document.getElementById('pin-input').addEventListener('keydown', e => { if (e.ke
 if (sessionStorage.getItem('ytrak-auth') === '1') {
   document.getElementById('pin-screen').style.display = 'none';
   document.getElementById('id-screen').style.display = 'flex';
-  checkDueDate();
+  loadDueBanner();
 }
 
 /* ── Toggle recall ── */
