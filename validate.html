@@ -46,6 +46,10 @@
   body.dark  .mode-btn:hover { background: #2a2f38; }
   body.light .text2 { color: #6b7280; }
   body.dark  .text2 { color: #9aa3b2; }
+  body.light .settings-box { background: #f0f4ff; border: 1px solid #c0cce0; }
+  body.dark  .settings-box { background: #1e2640; border: 1px solid #2a3a5e; }
+  body.light .settings-input { background: #fff; border: 1px solid #c0cce0; color: #111; }
+  body.dark  .settings-input { background: #22262e; border: 1px solid rgba(255,255,255,0.1); color: #e8eaf0; }
   .topbar { padding: 13px 24px; display: flex; align-items: center; justify-content: space-between; }
   .topbar h1 { font-size: 16px; font-weight: bold; margin: 0 0 2px; }
   .topbar p { font-size: 12px; opacity: 0.75; margin: 0; }
@@ -90,6 +94,19 @@
   .tbl-footer { padding: 7px 12px; font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
   .loading { text-align: center; padding: 40px; }
   .empty { text-align: center; padding: 20px; font-style: italic; }
+
+  /* Settings box */
+  .settings-box { border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; }
+  .settings-title { font-size: 13px; font-weight: bold; margin: 0 0 12px; display: flex; align-items: center; gap: 7px; }
+  .settings-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .settings-field { display: flex; flex-direction: column; gap: 4px; }
+  .settings-field label { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.04em; }
+  .settings-input { font-size: 13px; padding: 7px 10px; border-radius: 7px; font-family: Arial, sans-serif; outline: none; }
+  .settings-input:focus { border-color: #1a5dc8; }
+  .settings-btn { font-size: 13px; font-weight: bold; padding: 7px 18px; border-radius: 7px; background: #1a3a6b; color: #fff; border: none; cursor: pointer; font-family: Arial, sans-serif; white-space: nowrap; }
+  .settings-btn:hover { background: #14305a; }
+  .settings-saved { font-size: 12px; color: #10b981; margin-left: 8px; display: none; }
+  .settings-current { font-size: 12px; margin-top: 10px; }
 </style>
 </head>
 <body class="light">
@@ -103,8 +120,39 @@
 </div>
 
 <div class="container">
-  <div class="card">
 
+  <!-- Pay Period Settings Box -->
+  <div class="settings-box" id="settings-box">
+    <div class="settings-title">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#1a3a6b" stroke-width="1.4" fill="none"/><path d="M8 5v3.5l2 1.5" stroke="#1a3a6b" stroke-width="1.4" stroke-linecap="round"/></svg>
+      Pay Period Due Date
+    </div>
+    <div class="settings-row">
+      <div class="settings-field">
+        <label class="text2">Month</label>
+        <select class="settings-input" id="set-month">
+          <option value="">Select month</option>
+          <option>January</option><option>February</option><option>March</option>
+          <option>April</option><option>May</option><option>June</option>
+          <option>July</option><option>August</option><option>September</option>
+          <option>October</option><option>November</option><option>December</option>
+        </select>
+      </div>
+      <div class="settings-field">
+        <label class="text2">Year</label>
+        <input type="text" class="settings-input" id="set-year" maxlength="4" placeholder="2026" inputmode="numeric" style="width:80px;">
+      </div>
+      <div class="settings-field">
+        <label class="text2">Due Date</label>
+        <input type="date" class="settings-input" id="set-due">
+      </div>
+      <button class="settings-btn" onclick="saveSettings()">Save</button>
+      <span class="settings-saved" id="settings-saved">✓ Saved!</span>
+    </div>
+    <div class="settings-current text2" id="settings-current">Loading current setting…</div>
+  </div>
+
+  <div class="card">
     <div class="inner-top">
       <div>
         <div class="page-title">Timesheet Overview</div>
@@ -132,7 +180,6 @@
       </div>
     </div>
 
-    <!-- Stats -->
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-num num-blue"  id="s-total">—</div><div class="stat-lbl text2">Total employees</div></div>
       <div class="stat-card"><div class="stat-num num-green" id="s-submitted">—</div><div class="stat-lbl text2">Submitted</div></div>
@@ -140,7 +187,6 @@
       <div class="stat-card"><div class="stat-num num-amber" id="s-val">—</div><div class="stat-lbl text2">Validated</div></div>
     </div>
 
-    <!-- SUBMITTED TABLE -->
     <div class="section-title">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
       Submitted Timesheets
@@ -169,7 +215,6 @@
       </div>
     </div>
 
-    <!-- PENDING SUBMISSION TABLE -->
     <div class="section-title">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#ef4444" stroke-width="1.4" fill="none"/><path d="M8 5v3M8 11v.5" stroke="#ef4444" stroke-width="1.4" stroke-linecap="round"/></svg>
       Pending Submission
@@ -200,6 +245,7 @@ const sb = supabase.createClient(
   'https://kwgfonwgeoievgxwvxlg.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3Z2ZvbndnZW9pZXZneHd2eGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4Mzk4MDQsImV4cCI6MjA5MTQxNTgwNH0.KrH-loytrritpSgy6MVBmT0KyyodDp27ZLSATm1dGsM'
 );
+const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3Z2ZvbndnZW9pZXZneHd2eGxnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTgzOTgwNCwiZXhwIjoyMDkxNDE1ODA0fQ.yzHKNyoZ85hj2xxjW_byLStr-O9FOCPna9OVXvzthWI';
 
 const ROSTER = [
   { name: 'Jerimaine Gooch',    ssn: '6587' },
@@ -237,8 +283,52 @@ const ROSTER = [
 let allSheets = [], filtered = [];
 let isDark = false;
 
+/* ── Settings ── */
+async function loadSettings() {
+  const { data } = await sb.from('settings').select('*').eq('id', 'global').single();
+  if (data) {
+    const mSel = document.getElementById('set-month');
+    for (let i = 0; i < mSel.options.length; i++) { if (mSel.options[i].text === data.due_month) { mSel.selectedIndex = i; break; } }
+    document.getElementById('set-year').value = data.due_year || '';
+    document.getElementById('set-due').value  = data.due_date || '';
+    updateSettingsCurrent(data);
+  }
+}
+
+function updateSettingsCurrent(data) {
+  const el = document.getElementById('settings-current');
+  if (data && data.due_month && data.due_year && data.due_date) {
+    const formatted = new Date(data.due_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    el.textContent = `Current setting: Timesheets For ${data.due_month} ${data.due_year} Due ${formatted}`;
+  } else {
+    el.textContent = 'No due date currently set.';
+  }
+}
+
+async function saveSettings() {
+  const month   = document.getElementById('set-month').value;
+  const year    = document.getElementById('set-year').value.trim();
+  const dueDate = document.getElementById('set-due').value;
+  if (!month || !year || !dueDate) { alert('Please fill in all three fields before saving.'); return; }
+  const res = await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/settings?id=eq.global`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'apikey': SERVICE_KEY, 'Authorization': 'Bearer ' + SERVICE_KEY, 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ due_month: month, due_year: year, due_date: dueDate, updated_at: new Date().toISOString() })
+  });
+  if (res.ok) {
+    const saved = document.getElementById('settings-saved');
+    saved.style.display = 'inline';
+    setTimeout(() => { saved.style.display = 'none'; }, 3000);
+    updateSettingsCurrent({ due_month: month, due_year: year, due_date: dueDate });
+  } else {
+    alert('Failed to save. Please try again.');
+  }
+}
+
+/* ── Data ── */
 async function init() {
   await sb.auth.signOut();
+  await loadSettings();
   await loadSheets();
 }
 
@@ -291,25 +381,18 @@ function hrsCell(v, cls) {
 function renderTables() {
   const submittedBody = document.getElementById('submitted-body');
   const pendingBody   = document.getElementById('pending-body');
-
-  const submittedRows = [];
-  const pendingRows   = [];
+  const submittedRows = [], pendingRows = [];
 
   ROSTER.forEach(emp => {
     const sheet = filtered.find(s => s.ssn_last4 === emp.ssn) ||
                   filtered.find(s => s.employee_name?.toLowerCase() === emp.name.toLowerCase());
-    if (sheet) {
-      submittedRows.push({ emp, sheet });
-    } else {
-      pendingRows.push(emp);
-    }
+    if (sheet) submittedRows.push({ emp, sheet });
+    else pendingRows.push(emp);
   });
 
   const matchedIds = new Set(submittedRows.map(r => r.sheet.id));
   filtered.forEach(s => {
-    if (!matchedIds.has(s.id)) {
-      submittedRows.push({ emp: { name: s.employee_name, ssn: s.ssn_last4 }, sheet: s, unknown: true });
-    }
+    if (!matchedIds.has(s.id)) submittedRows.push({ emp: { name: s.employee_name, ssn: s.ssn_last4 }, sheet: s, unknown: true });
   });
 
   document.getElementById('s-total').textContent     = ROSTER.length;
