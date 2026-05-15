@@ -27,7 +27,8 @@
   .id-card { background: #fff; border: 1px solid #ddd; border-radius: 14px; padding: 36px 32px; width: 100%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
   .id-title { font-size: 18px; font-weight: 800; color: #1a3a6b; margin: 0 0 4px; }
   .id-sub { font-size: 12px; color: #888; margin: 0 0 16px; }
-  .due-banner { background: #c0392b; color: #fff; border-radius: 8px; padding: 10px 14px; font-size: 13px; font-weight: bold; text-align: center; margin-bottom: 18px; display: none; line-height: 1.5; }
+  .due-banner { background: #c0392b; color: #fff; border-radius: 8px; padding: 10px 14px; font-size: 13px; text-align: center; margin-bottom: 18px; display: none; line-height: 1.5; }
+  .due-banner .due-date { font-weight: bold; text-decoration: underline; }
   .id-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
   .id-field label { font-size: 11px; font-weight: bold; color: #555; text-transform: uppercase; letter-spacing: 0.05em; }
   .id-field input { background: #f7f8fa; border: 1.5px solid #e0e3e8; border-radius: 8px; padding: 11px 12px; font-size: 15px; color: #111; width: 100%; font-family: Arial, sans-serif; }
@@ -334,7 +335,7 @@ async function loadDueBanner() {
     if (data && data.due_month && data.due_year && data.due_date) {
       const formatted = new Date(data.due_date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
       const banner = document.getElementById('due-banner');
-      banner.textContent = `📅 Timesheets For ${data.due_month} ${data.due_year} Due ${formatted}`;
+      banner.innerHTML = `📅 ${data.due_month} ${data.due_year} Timesheets Due <span class="due-date">${formatted}</span>`;
       banner.style.display = 'block';
     }
   } catch(e) {}
