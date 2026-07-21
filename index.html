@@ -9,8 +9,6 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; }
   body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 16px; color: #111; }
-
-  /* PIN */
   .pin-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: -16px; background: #f0f2f5; }
   .pin-card { background: #fff; border: 1px solid #ddd; border-radius: 14px; padding: 40px 32px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
   .pin-logo { font-size: 28px; font-weight: 900; color: #1a3a6b; letter-spacing: 2px; margin: 0 0 4px; }
@@ -21,9 +19,7 @@
   .pin-btn { width: 100%; margin-top: 14px; padding: 13px; font-size: 15px; font-weight: bold; background: #1a5dc8; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-family: Arial, sans-serif; }
   .pin-btn:hover { background: #154fa8; }
   .pin-error { background: #fff0f0; border: 1px solid #f0b0b0; border-radius: 8px; padding: 9px 14px; font-size: 13px; color: #a00; margin-top: 12px; display: none; }
-
-  /* Identity screen */
-  .id-screen { display: none; align-items: center; justify-content: center; min-height: 100vh; margin: -16px; background: #f0f2f5; }
+  .id-screen { display: none; align-items: center; justify-content: center; min-height: 100vh; margin: -16px; background: #f0f2f5; padding: 20px; }
   .id-card { background: #fff; border: 1px solid #ddd; border-radius: 14px; padding: 36px 32px; width: 100%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
   .id-title { font-size: 18px; font-weight: 800; color: #1a3a6b; margin: 0 0 4px; }
   .id-sub { font-size: 12px; color: #888; margin: 0 0 16px; }
@@ -40,12 +36,18 @@
   .id-btn:disabled { background: #aaa; cursor: default; }
   .id-btn.secondary { background: #f0f2f5; color: #1a3a6b; border: 1.5px solid #c0cce0; margin-top: 10px; }
   .id-btn.secondary:hover { background: #e0e8f5; }
+  .id-btn.green { background: #1a7a3a; border: none; margin-top: 10px; }
+  .id-btn.green:hover { background: #155e2e; }
   .id-divider { display: flex; align-items: center; gap: 10px; margin: 16px 0; }
   .id-divider span { font-size: 12px; color: #aaa; white-space: nowrap; }
   .id-divider::before, .id-divider::after { content: ''; flex: 1; height: 1px; background: #e0e3e8; }
   .id-error { background: #fff0f0; border: 1px solid #f0b0b0; border-radius: 8px; padding: 9px 14px; font-size: 13px; color: #a00; margin-top: 12px; display: none; }
-  .recall-section { display: none; margin-top: 4px; }
-  .recall-section .recall-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .recall-error { background: #fff0f0; border: 1px solid #f0b0b0; border-radius: 8px; padding: 9px 14px; font-size: 13px; color: #a00; margin-top: 12px; display: none; }
+
+  /* Recall box */
+  .recall-box { display: none; margin-top: 4px; background: #f0f4ff; border: 1.5px solid #c0cce0; border-radius: 10px; padding: 16px; }
+  .recall-box-title { font-size: 12px; font-weight: bold; color: #1a3a6b; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 12px; }
+  .recall-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
   /* Timesheet */
   .timesheet-screen { display: none; max-width: 900px; margin: 0 auto; }
@@ -78,7 +80,6 @@
   .ci:focus { background: #fff; border-radius: 4px; border: 1px solid #3a7bd5; padding: 4px 6px; }
   .ci.auto-val { color: #1a5dc8; pointer-events: none; user-select: none; }
   .ci[readonly] { cursor: default; }
-  .ci.field-err { border: 1px solid #e53e3e !important; border-radius: 4px; background: #fff5f5 !important; }
   .day-num { font-size: 12px; color: #777; width: 36px; padding-left: 6px !important; white-space: nowrap; }
   .day-num.cont { color: #8b5cf6; font-weight: bold; font-style: italic; }
   td.col-total { background: #f5f5f5; }
@@ -143,6 +144,8 @@
     <p class="id-title">Y-TRAK</p>
     <p class="id-sub">Yalobusha County Sheriff's Department — Please identify yourself</p>
     <div class="due-banner" id="due-banner"></div>
+
+    <!-- New timesheet fields -->
     <div class="id-field">
       <label>Full Name <span style="color:#e53e3e">*</span></label>
       <input type="text" id="id-name" placeholder="Enter your full name" autocomplete="name">
@@ -152,17 +155,32 @@
       <input type="text" id="id-ssn" maxlength="4" placeholder="XXXX" inputmode="numeric" onkeydown="if(event.key==='Enter') checkIdentity()">
     </div>
     <button class="id-btn" id="id-btn" onclick="checkIdentity()">Continue</button>
+    <div class="id-error" id="id-error"></div>
+
     <div class="id-divider"><span>or</span></div>
+
+    <!-- Recall button -->
     <button class="id-btn secondary" onclick="toggleRecall()">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"><path d="M2 8a6 6 0 106-6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/><path d="M2 4v4h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;margin-right:4px;"><path d="M2 8a6 6 0 106-6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/><path d="M2 4v4h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
       Recall a timesheet
     </button>
-    <div class="recall-section" id="recall-section">
-      <div class="recall-fields">
+
+    <!-- Self-contained recall box -->
+    <div class="recall-box" id="recall-box">
+      <p class="recall-box-title">&#8635; Recall a Previous Timesheet</p>
+      <div class="id-field">
+        <label>Full Name <span style="color:#e53e3e">*</span></label>
+        <input type="text" id="recall-name" placeholder="Enter your full name" autocomplete="name">
+      </div>
+      <div class="id-field">
+        <label>Last 4 of Social <span style="color:#e53e3e">*</span></label>
+        <input type="text" id="recall-ssn" maxlength="4" placeholder="XXXX" inputmode="numeric">
+      </div>
+      <div class="recall-row">
         <div class="id-field" style="margin-bottom:0;">
-          <label>Month</label>
+          <label>Month <span style="color:#e53e3e">*</span></label>
           <select id="recall-month">
-            <option value="" disabled selected>Month</option>
+            <option value="" disabled selected>Select</option>
             <option>January</option><option>February</option><option>March</option>
             <option>April</option><option>May</option><option>June</option>
             <option>July</option><option>August</option><option>September</option>
@@ -170,16 +188,17 @@
           </select>
         </div>
         <div class="id-field" style="margin-bottom:0;">
-          <label>Year</label>
+          <label>Year <span style="color:#e53e3e">*</span></label>
           <input type="text" id="recall-year" maxlength="4" placeholder="2026" inputmode="numeric">
         </div>
       </div>
-      <button class="id-btn" id="recall-btn" onclick="recallTimesheet()" style="margin-top:10px;background:#1a7a3a;border:none;">
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"><path d="M2 8a6 6 0 106-6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/><path d="M2 4v4h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      <button class="id-btn green" id="recall-btn" onclick="recallTimesheet()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;margin-right:4px;"><path d="M2 8a6 6 0 106-6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/><path d="M2 4v4h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
         Load Timesheet
       </button>
+      <div class="recall-error" id="recall-error"></div>
     </div>
-    <div class="id-error" id="id-error"></div>
+
   </div>
 </div>
 
@@ -268,7 +287,7 @@
       <div class="metric"><p class="metric-label">Comp hours</p><p class="metric-value" id="bar-comp">0.00</p></div>
       <div class="metric"><p class="metric-label">Sick hours</p><p class="metric-value" id="bar-sick">0.00</p></div>
     </div>
-    <div class="sig-block" id="sig-emp">
+    <div class="sig-block">
       <span class="sig-block-label">Employee Signature</span>
       <div class="sig-toggle">
         <button class="active" onclick="setSigMode('draw')">Sign manually</button>
@@ -323,12 +342,11 @@ const sb = supabase.createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3Z2ZvbndnZW9pZXZneHd2eGxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4Mzk4MDQsImV4cCI6MjA5MTQxNTgwNH0.KrH-loytrritpSgy6MVBmT0KyyodDp27ZLSATm1dGsM'
 );
 const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3Z2ZvbndnZW9pZXZneHd2eGxnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTgzOTgwNCwiZXhwIjoyMDkxNDE1ODA0fQ.yzHKNyoZ85hj2xxjW_byLStr-O9FOCPna9OVXvzthWI';
-
 const CORRECT_PIN = '38965';
 let sigData = null;
 let existingSheetId = null;
 
-/* ── Load due date banner ── */
+/* ── Due date banner ── */
 async function loadDueBanner() {
   try {
     const { data } = await sb.from('settings').select('*').eq('id', 'global').single();
@@ -364,13 +382,15 @@ if (sessionStorage.getItem('ytrak-auth') === '1') {
   loadDueBanner();
 }
 
-/* ── Toggle recall ── */
+/* ── Toggle recall box ── */
 function toggleRecall() {
-  const sec = document.getElementById('recall-section');
-  sec.style.display = sec.style.display === 'block' ? 'none' : 'block';
+  const box = document.getElementById('recall-box');
+  const isOpen = box.style.display === 'block';
+  box.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) document.getElementById('recall-name').focus();
 }
 
-/* ── Identity check ── */
+/* ── Identity check (new timesheet) ── */
 async function checkIdentity() {
   const name = document.getElementById('id-name').value.trim();
   const ssn  = document.getElementById('id-ssn').value.trim();
@@ -400,26 +420,34 @@ async function checkIdentity() {
   }
 }
 
-/* ── Recall ── */
+/* ── Recall timesheet (self-contained) ── */
 async function recallTimesheet() {
-  const name  = document.getElementById('id-name').value.trim();
-  const ssn   = document.getElementById('id-ssn').value.trim();
+  const name  = document.getElementById('recall-name').value.trim();
+  const ssn   = document.getElementById('recall-ssn').value.trim();
   const month = document.getElementById('recall-month').value;
   const year  = document.getElementById('recall-year').value.trim();
-  const err   = document.getElementById('id-error');
+  const err   = document.getElementById('recall-error');
   const btn   = document.getElementById('recall-btn');
   err.style.display = 'none';
-  if (!name) { err.textContent = 'Please enter your full name above.'; err.style.display = 'block'; return; }
-  if (ssn.length !== 4) { err.textContent = 'Please enter your last 4 SSN above.'; err.style.display = 'block'; return; }
-  if (!month) { err.textContent = 'Please select a month.'; err.style.display = 'block'; return; }
+  if (!name)            { err.textContent = 'Please enter your full name.'; err.style.display = 'block'; return; }
+  if (ssn.length !== 4) { err.textContent = 'Please enter your last 4 digits of Social Security Number.'; err.style.display = 'block'; return; }
+  if (!month)           { err.textContent = 'Please select a month.'; err.style.display = 'block'; return; }
   if (!/^\d{4}$/.test(year)) { err.textContent = 'Please enter a valid 4-digit year.'; err.style.display = 'block'; return; }
   btn.disabled = true; btn.textContent = 'Searching…';
   const { data } = await sb.from('timesheets').select('*').ilike('employee_name', name).eq('ssn_last4', ssn).eq('month', month).eq('year', year).order('submitted_at', { ascending: false }).limit(1);
   btn.disabled = false;
-  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"><path d="M2 8a6 6 0 106-6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/><path d="M2 4v4h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Load Timesheet';
-  if (!data || data.length === 0) { err.textContent = `No timesheet found for ${month} ${year}. Please check your details and try again.`; err.style.display = 'block'; return; }
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;margin-right:4px;"><path d="M2 8a6 6 0 106-6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/><path d="M2 4v4h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Load Timesheet';
+  if (!data || data.length === 0) {
+    err.textContent = `No timesheet found for ${month} ${year}. Please check your details and try again.`;
+    err.style.display = 'block';
+    return;
+  }
   const sheet = data[0];
-  if (sheet.status === 'approved') { alert(`Your ${month} ${year} timesheet has been signed by the Chief Deputy and cannot be recalled. Please contact the Chief to return it for corrections.`); return; }
+  if (sheet.status === 'approved') {
+    err.textContent = `Your ${month} ${year} timesheet has been signed by the Chief Deputy and cannot be recalled. Please contact the Chief to return it for corrections.`;
+    err.style.display = 'block';
+    return;
+  }
   existingSheetId = sheet.id;
   showTimesheetScreen();
   document.getElementById('f-name').value = name;
@@ -435,9 +463,8 @@ function showTimesheetScreen() {
 function prefillSheet(s, mode) {
   if (mode === 'returned') {
     const banner = document.getElementById('returned-banner');
-    const noteEl = document.getElementById('returned-note');
     banner.style.display = 'block';
-    noteEl.textContent = s.return_note ? `Reason: ${s.return_note}` : 'Please review and resubmit your timesheet.';
+    document.getElementById('returned-note').textContent = s.return_note ? `Reason: ${s.return_note}` : 'Please review and resubmit your timesheet.';
   } else if (mode === 'recalled') {
     document.getElementById('recalled-banner').style.display = 'block';
   }
@@ -447,19 +474,16 @@ function prefillSheet(s, mode) {
   const statusSel = document.getElementById('f-status');
   for (let i = 0; i < statusSel.options.length; i++) { if (statusSel.options[i].text === s.employment_status) { statusSel.selectedIndex = i; break; } }
   buildGrid();
-  const rows = s.rows || [];
-  rows.forEach(r => {
+  (s.rows || []).forEach(r => {
     if (!r.start && !r.end && !r.comp && !r.sick && !r.notes) return;
-    const day = parseInt(r.day);
-    const tr = document.querySelector(`tr[data-day="${day}"]:not([data-cont="true"])`);
+    const tr = document.querySelector(`tr[data-day="${parseInt(r.day)}"]:not([data-cont="true"])`);
     if (!tr) return;
     tr.querySelector('.f-start').value = r.start || '';
     tr.querySelector('.f-end').value   = r.end   || '';
     tr.querySelector('.f-comp').value  = r.comp  || '';
     tr.querySelector('.f-sick').value  = r.sick  || '';
     tr.querySelector('.f-notes').value = r.notes || '';
-    const tot = tr.querySelector('.f-total');
-    if (r.start && r.end) tot.value = calcHours(r.start, r.end);
+    if (r.start && r.end) tr.querySelector('.f-total').value = calcHours(r.start, r.end);
   });
   recalcTotals();
 }
@@ -515,19 +539,17 @@ function attachEvents(tr) {
   });
 }
 function buildGrid() {
-  const tbody = document.getElementById('tc-body');
-  tbody.innerHTML = '';
+  document.getElementById('tc-body').innerHTML = '';
   for (let d = 1; d <= 31; d++) addDayRow(d, false, null);
 }
 function addDayRow(day, isCont, insertAfterTr) {
   const tbody = document.getElementById('tc-body');
   const tr = document.createElement('tr');
-  const label = isCont ? `${day} cont.` : String(day);
   tr.setAttribute('data-day', day);
   tr.setAttribute('data-cont', isCont ? 'true' : 'false');
   if (isCont) tr.classList.add('cont-row');
   tr.innerHTML = `
-    <td class="day-num${isCont?' cont':''}">${label}</td>
+    <td class="day-num${isCont?' cont':''}">${isCont ? day+' cont.' : day}</td>
     <td><input class="ci f-start" placeholder="" inputmode="numeric"></td>
     <td><input class="ci f-end"   placeholder="" inputmode="numeric"></td>
     <td class="col-total${isCont?' cont':''}"><input class="ci f-total auto-val" placeholder="" readonly tabindex="-1"></td>
@@ -536,9 +558,8 @@ function addDayRow(day, isCont, insertAfterTr) {
     <td><input class="ci f-notes" placeholder=""></td>
     <td class="col-ins">
       ${isCont
-        ? `<button class="del-btn" onclick="removeContRow(this)" title="Remove">&#x2715;</button>`
-        : `<button class="ins-btn" onclick="insertContRow(this,${day})" title="Add split shift">+ Insert Row</button>`
-      }
+        ? `<button class="del-btn" onclick="removeContRow(this)">&#x2715;</button>`
+        : `<button class="ins-btn" onclick="insertContRow(this,${day})">+ Insert Row</button>`}
     </td>`;
   if (insertAfterTr) insertAfterTr.parentNode.insertBefore(tr, insertAfterTr.nextSibling);
   else tbody.appendChild(tr);
@@ -564,7 +585,7 @@ function setSigMode(mode) {
 }
 function setupPad() {
   const canvas=document.getElementById('emp-canvas'), outer=document.getElementById('emp-canvas-outer'), hint=document.getElementById('emp-hint');
-  function resize() { const dpr=window.devicePixelRatio||1,w=outer.clientWidth||300; canvas.width=w*dpr; canvas.height=80*dpr; canvas.style.width=w+'px'; canvas.style.height='80px'; const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr); ctx.strokeStyle='#111'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.lineJoin='round'; }
+  function resize(){const dpr=window.devicePixelRatio||1,w=outer.clientWidth||300;canvas.width=w*dpr;canvas.height=80*dpr;canvas.style.width=w+'px';canvas.style.height='80px';const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);ctx.strokeStyle='#111';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';}
   resize(); window.addEventListener('resize',resize);
   let drawing=false;
   function getPos(e){const rect=canvas.getBoundingClientRect();const src=e.touches?e.touches[0]:e;return{x:src.clientX-rect.left,y:src.clientY-rect.top};}
@@ -581,7 +602,7 @@ function clearUpload(){sigData=null;document.getElementById('emp-upload-img').sr
 setupPad();
 document.getElementById('sig-upload-wrap').style.display='none';
 
-/* ── Validation ── */
+/* ── Form validation ── */
 function validateForm() {
   let valid=true;const banner=document.getElementById('val-banner');const missing=[];
   const checks=[
@@ -593,7 +614,7 @@ function validateForm() {
   ];
   checks.forEach(c=>{const el=document.getElementById(c.id),f=document.getElementById(c.fid);const pass=c.test(el.value);f.classList.toggle('field-invalid',!pass);if(!pass){missing.push(c.label);valid=false;}});
   if(!valid){banner.textContent='Please complete: '+missing.join(', ');banner.style.display='block';banner.scrollIntoView({behavior:'smooth',block:'center'});}
-  else{banner.style.display='none';}
+  else banner.style.display='none';
   return valid;
 }
 
@@ -603,8 +624,7 @@ function buildRows() {
   for(let d=1;d<=31;d++) dayMap[d]=[];
   document.querySelectorAll('tr[data-day]').forEach(tr=>{
     const day=parseInt(tr.getAttribute('data-day'));
-    const cont=tr.getAttribute('data-cont')==='true';
-    dayMap[day].push({cont,start:tr.querySelector('.f-start').value,end:tr.querySelector('.f-end').value,total:tr.querySelector('.f-total').value,comp:tr.querySelector('.f-comp').value,sick:tr.querySelector('.f-sick').value,notes:tr.querySelector('.f-notes').value});
+    dayMap[day].push({cont:tr.getAttribute('data-cont')==='true',start:tr.querySelector('.f-start').value,end:tr.querySelector('.f-end').value,total:tr.querySelector('.f-total').value,comp:tr.querySelector('.f-comp').value,sick:tr.querySelector('.f-sick').value,notes:tr.querySelector('.f-notes').value});
   });
   const grid=[];
   for(let d=1;d<=31;d++){
@@ -628,7 +648,7 @@ async function submitTimesheet() {
   btn.disabled=true;btn.innerHTML='Submitting&hellip;';
   statusEl.style.display='none';
   try {
-    if (existingSheetId) {
+    if(existingSheetId){
       await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${existingSheetId}`,{method:'DELETE',headers:{'apikey':SERVICE_KEY,'Authorization':'Bearer '+SERVICE_KEY}});
       existingSheetId=null;
     }
