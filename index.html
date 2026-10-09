@@ -107,7 +107,7 @@
   .recalled-banner { background: #e8f0fe; border: 1.5px solid #aac4f0; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: #1a3a6b; line-height: 1.6; }
   .time-note { font-size: 12px; color: #5a4200; background: #FFE600; border: 1.5px solid #e6c800; border-radius: 8px; padding: 8px 12px; margin-bottom: 14px; line-height: 1.5; font-weight: bold; }
   .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 14px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 680px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 760px; }
   thead th { font-size: 11px; font-weight: bold; color: var(--label); text-align: left; padding: 8px 6px; border: 1px solid var(--border-head); background: var(--table-head-bg); white-space: nowrap; }
   tbody td { padding: 2px 3px; border: 1px solid var(--border3); vertical-align: middle; }
   tbody tr:hover td { background: var(--row-hover); }
@@ -122,7 +122,22 @@
   .day-num.cont { color: #8b5cf6; font-weight: bold; font-style: italic; }
   td.col-total { background: var(--col-total); }
   td.col-total.cont { background: var(--row-cont-hover); }
-  td.col-ins { width: 80px; text-align: center; border-color: transparent !important; background: transparent !important; }
+  td.col-ins { width: 150px; text-align: left; white-space: nowrap; border-color: transparent !important; background: transparent !important; }
+  .col-date { width: 104px; }
+  .date-pick { position: relative; min-height: 26px; display: flex; align-items: center; }
+  .date-pick .f-date { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: none; padding: 0; margin: 0; }
+  .date-pick .f-date:disabled { cursor: not-allowed; }
+  .date-text { font-size: 13px; color: var(--text); padding: 5px 4px; cursor: pointer; white-space: nowrap; user-select: none; }
+  .date-text.placeholder { color: var(--faint); }
+  .split-date { font-size: 12px; color: #8b5cf6; font-style: italic; padding: 5px 4px; white-space: nowrap; display: inline-block; }
+  .split-btn { background: none; border: 1px solid var(--border-accent); border-radius: 5px; color: var(--accent); cursor: pointer; font-size: 10px; font-weight: bold; padding: 3px 7px; font-family: Arial, sans-serif; white-space: nowrap; }
+  .split-btn:hover { background: var(--row-active); }
+  .row-remove { background: none; border: none; color: var(--border3); cursor: pointer; font-size: 13px; padding: 2px 5px; line-height: 1; }
+  .row-remove:hover { color: #e53e3e; }
+  .row-invalid td { background: #fff5f5 !important; }
+  .row-invalid .date-text { color: #e53e3e; font-weight: bold; }
+  .add-line-btn { display: inline-flex; align-items: center; gap: 7px; margin: 2px 0 18px; padding: 10px 18px; background: var(--accent); color: #fff; border: none; border-radius: 9px; font-size: 13px; font-weight: bold; cursor: pointer; font-family: Arial, sans-serif; }
+  .add-line-btn:hover { background: var(--accent-hover); }
   .ins-btn { background: none; border: 1px solid var(--border-accent); border-radius: 5px; color: var(--label); cursor: pointer; font-size: 10px; font-weight: bold; padding: 2px 6px; font-family: Arial, sans-serif; white-space: nowrap; line-height: 1.4; }
   .ins-btn:hover { background: var(--row-active); border-color: var(--accent); color: var(--accent); }
   .del-btn { background: none; border: none; color: var(--border3); cursor: pointer; font-size: 13px; padding: 2px 3px; line-height: 1; }
@@ -301,14 +316,14 @@
 
   <div class="ts-card">
     <div class="time-note">
-      Enter times in 24-hour format — e.g. <strong>0800</strong> or <strong>08:00</strong> for 8 AM, <strong>1600</strong> or <strong>16:00</strong> for 4 PM. Colons added automatically.
-      For split shifts, click <strong>Insert Row</strong> on the right side of any line.
+      Pick the <strong>Month</strong> and <strong>Year</strong> above, then on each line choose the <strong>date</strong> and enter <strong>Start</strong> and <strong>End</strong> in 24-hour time — e.g. <strong>0800</strong> for 8 AM, <strong>1600</strong> for 4 PM. Hours calculate automatically.
+      Use <strong>+ Split Shift</strong> for a second shift the same day, and the blue <strong>+ Add Line</strong> button to add another day.
     </div>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th style="width:38px;">Day</th>
+            <th style="width:104px;">Date</th>
             <th style="width:70px;">Start</th>
             <th style="width:70px;">End</th>
             <th style="width:66px;">Total Hrs</th>
@@ -321,12 +336,16 @@
         <tbody id="tc-body"></tbody>
         <tfoot>
           <tr>
-            <td colspan="3" style="text-align:right;padding-right:8px;font-size:12px;color:#555;font-weight:normal;">Total hours</td>
+            <td colspan="3" style="text-align:right;padding-right:8px;font-size:12px;color:var(--label);font-weight:normal;">Total hours</td>
             <td id="tot-total">0.00</td><td id="tot-comp">0.00</td><td id="tot-sick">0.00</td><td colspan="2"></td>
           </tr>
         </tfoot>
       </table>
     </div>
+    <button class="add-line-btn" onclick="addLine()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Add Line
+    </button>
     <div class="totals-bar">
       <div class="metric"><p class="metric-label">Total hours</p><p class="metric-value" id="bar-total">0.00</p></div>
       <div class="metric"><p class="metric-label">Comp hours</p><p class="metric-value" id="bar-comp">0.00</p></div>
@@ -399,6 +418,7 @@ const CORRECT_PIN = '38965';
 let sigData = null;
 let existingSheetId = null;
 let isDraft = false;   // true when the loaded row is a saved (unsubmitted) draft
+let prevMonth = '', prevYear = '';   // remembered top Month/Year, for the change-confirm
 
 /* ── Year dropdown: current year + next two, rebuilt from today's date so it
       rolls forward automatically each January with no code change ── */
@@ -574,18 +594,31 @@ function prefillSheet(s, mode) {
   document.getElementById('f-year').value = s.year || '';
   const statusSel = document.getElementById('f-status');
   for (let i = 0; i < statusSel.options.length; i++) { if (statusSel.options[i].text === s.employment_status) { statusSel.selectedIndex = i; break; } }
-  buildGrid();
-  (s.rows || []).forEach(r => {
-    if (!r.start && !r.end && !r.comp && !r.sick && !r.notes) return;
-    const tr = document.querySelector(`tr[data-day="${parseInt(r.day)}"]:not([data-cont="true"])`);
-    if (!tr) return;
-    tr.querySelector('.f-start').value = r.start || '';
-    tr.querySelector('.f-end').value   = r.end   || '';
-    tr.querySelector('.f-comp').value  = r.comp  || '';
-    tr.querySelector('.f-sick').value  = r.sick  || '';
-    tr.querySelector('.f-notes').value = r.notes || '';
-    if (r.start && r.end) tr.querySelector('.f-total').value = calcHours(r.start, r.end);
-  });
+
+  // Reverse-map the stored 31-day array into one dated row per populated day.
+  document.getElementById('tc-body').innerHTML = '';
+  const mn = monthNum(s.month), yr = s.year;
+  const populated = (s.rows || []).filter(r => r.start || r.end || r.comp || r.sick || r.notes);
+  if (populated.length === 0) {
+    addEntryRow(false, null, null);
+  } else {
+    populated.forEach(r => {
+      const day = parseInt(r.day, 10);
+      const row = addEntryRow(false, null, null);
+      if (mn && /^\d{4}$/.test(String(yr)) && day >= 1 && day <= 31) {
+        setRowDate(row, `${yr}-${String(mn).padStart(2,'0')}-${String(day).padStart(2,'0')}`);
+      }
+      row.querySelector('.f-start').value = r.start || '';
+      row.querySelector('.f-end').value   = r.end   || '';
+      row.querySelector('.f-comp').value  = r.comp  || '';
+      row.querySelector('.f-sick').value  = r.sick  || '';
+      row.querySelector('.f-notes').value = r.notes || '';
+      if (r.start && r.end) row.querySelector('.f-total').value = calcHours(r.start, r.end);
+    });
+  }
+  prevMonth = document.getElementById('f-month').value;
+  prevYear  = document.getElementById('f-year').value;
+  updatePickerBounds();
   recalcTotals();
 }
 
@@ -639,41 +672,156 @@ function attachEvents(tr) {
     inp.addEventListener('blur',  () => tr.classList.remove('active-row'));
   });
 }
+/* ── Date helpers for the entry grid ── */
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function monthNum(name){ const i = MONTH_NAMES.indexOf(name); return i < 0 ? null : i + 1; }
+function fmtMMDDYY(iso){ const p = String(iso).split('-'); if (p.length !== 3) return ''; return `${p[1]}/${p[2]}/${p[0].slice(2)}`; }
+function currentMonthBounds(){
+  const mName = document.getElementById('f-month').value;
+  const year  = document.getElementById('f-year').value;
+  const mn = monthNum(mName);
+  if (!mn || !/^\d{4}$/.test(year)) return null;
+  const mm = String(mn).padStart(2,'0');
+  const last = new Date(+year, mn, 0).getDate();
+  return { mn, year, min: `${year}-${mm}-01`, max: `${year}-${mm}-${String(last).padStart(2,'0')}` };
+}
+function setSelectByText(id, text){ const sel = document.getElementById(id); for (let i=0;i<sel.options.length;i++){ if (sel.options[i].text === text){ sel.selectedIndex = i; return; } } sel.selectedIndex = 0; }
+
 function buildGrid() {
   document.getElementById('tc-body').innerHTML = '';
-  for (let d = 1; d <= 31; d++) addDayRow(d, false, null);
+  addEntryRow(false, null, null);
+  updatePickerBounds();
 }
-function addDayRow(day, isCont, insertAfterTr) {
+
+function addEntryRow(isSplit, insertAfterTr, presetDateISO) {
   const tbody = document.getElementById('tc-body');
   const tr = document.createElement('tr');
-  tr.setAttribute('data-day', day);
-  tr.setAttribute('data-cont', isCont ? 'true' : 'false');
-  if (isCont) tr.classList.add('cont-row');
-  tr.innerHTML = `
-    <td class="day-num${isCont?' cont':''}">${isCont ? day+' cont.' : day}</td>
-    <td><input class="ci f-start" placeholder="" inputmode="numeric"></td>
-    <td><input class="ci f-end"   placeholder="" inputmode="numeric"></td>
-    <td class="col-total${isCont?' cont':''}"><input class="ci f-total auto-val" placeholder="" readonly tabindex="-1"></td>
-    <td><input class="ci f-comp"  placeholder="" inputmode="decimal"></td>
-    <td><input class="ci f-sick"  placeholder="" inputmode="decimal"></td>
-    <td><input class="ci f-notes" placeholder=""></td>
-    <td class="col-ins">
-      ${isCont
-        ? `<button class="del-btn" onclick="removeContRow(this)">&#x2715;</button>`
-        : `<button class="ins-btn" onclick="insertContRow(this,${day})">+ Insert Row</button>`}
-    </td>`;
+  tr.setAttribute('data-cont', isSplit ? 'true' : 'false');
+  if (isSplit) tr.classList.add('cont-row');
+
+  let dateCell;
+  if (isSplit) {
+    tr.setAttribute('data-day', String(parseInt(presetDateISO.split('-')[2], 10)));
+    dateCell = `<td class="col-date"><span class="split-date" title="Split shift — same day">&#8627; ${fmtMMDDYY(presetDateISO)}</span></td>`;
+  } else {
+    dateCell = `<td class="col-date"><div class="date-pick"><span class="date-text placeholder">mm/dd/yy</span><input type="date" class="f-date" onchange="onDateChange(this)" onclick="try{this.showPicker&&this.showPicker()}catch(e){}"></div></td>`;
+  }
+
+  const actions = isSplit
+    ? `<button class="row-remove" title="Remove this split" onclick="removeRow(this)">&#x2715;</button>`
+    : `<button class="split-btn" onclick="addSplitShift(this)">+ Split Shift</button> <button class="row-remove" title="Remove this line" onclick="removeRow(this)">&#x2715;</button>`;
+
+  tr.innerHTML = dateCell +
+    `<td><input class="ci f-start" inputmode="numeric"></td>` +
+    `<td><input class="ci f-end" inputmode="numeric"></td>` +
+    `<td class="col-total${isSplit?' cont':''}"><input class="ci f-total auto-val" readonly tabindex="-1"></td>` +
+    `<td><input class="ci f-comp" inputmode="decimal"></td>` +
+    `<td><input class="ci f-sick" inputmode="decimal"></td>` +
+    `<td><input class="ci f-notes"></td>` +
+    `<td class="col-ins">${actions}</td>`;
+
   if (insertAfterTr) insertAfterTr.parentNode.insertBefore(tr, insertAfterTr.nextSibling);
   else tbody.appendChild(tr);
   attachEvents(tr);
+
+  if (!isSplit) {
+    const b = currentMonthBounds(), inp = tr.querySelector('.f-date'), dt = tr.querySelector('.date-text');
+    if (b) { inp.min = b.min; inp.max = b.max; inp.disabled = false; }
+    else { inp.disabled = true; if (dt) dt.textContent = 'Pick month/year first'; }
+  }
   return tr;
 }
-function insertContRow(btn, day) {
-  const tr = btn.closest('tr');
-  let insertAfter = tr, next = tr.nextSibling;
-  while (next && next.nodeType===1 && next.getAttribute('data-day')===String(day) && next.getAttribute('data-cont')==='true') { insertAfter=next; next=next.nextSibling; }
-  addDayRow(day, true, insertAfter);
+
+function setRowDate(tr, iso){
+  const inp = tr.querySelector('.f-date'), dt = tr.querySelector('.date-text');
+  if (inp) inp.value = iso;
+  if (dt) { dt.textContent = fmtMMDDYY(iso); dt.classList.remove('placeholder'); }
+  tr.setAttribute('data-day', String(parseInt(iso.split('-')[2], 10)));
 }
-function removeContRow(btn) { btn.closest('tr').remove(); recalcTotals(); }
+
+function onDateChange(input){
+  const tr = input.closest('tr'), dt = tr.querySelector('.date-text'), val = input.value;
+  if (val) {
+    tr.setAttribute('data-day', String(parseInt(val.split('-')[2], 10)));
+    if (dt) { dt.textContent = fmtMMDDYY(val); dt.classList.remove('placeholder'); }
+    tr.classList.remove('row-invalid');
+    propagateDateToSplits(tr, val);
+  } else {
+    tr.removeAttribute('data-day');
+    if (dt) { dt.textContent = 'mm/dd/yy'; dt.classList.add('placeholder'); }
+    propagateDateToSplits(tr, '');
+  }
+  recalcTotals();
+}
+
+function propagateDateToSplits(primaryTr, iso){
+  let next = primaryTr.nextElementSibling;
+  while (next && next.getAttribute('data-cont') === 'true') {
+    const sd = next.querySelector('.split-date');
+    if (iso) { next.setAttribute('data-day', String(parseInt(iso.split('-')[2], 10))); if (sd) sd.innerHTML = '&#8627; ' + fmtMMDDYY(iso); }
+    else { next.removeAttribute('data-day'); if (sd) sd.innerHTML = '&#8627; (no date)'; }
+    next = next.nextElementSibling;
+  }
+}
+
+function addSplitShift(btn){
+  const tr = btn.closest('tr'), inp = tr.querySelector('.f-date');
+  if (!inp || !inp.value) { alert('Pick a date on this line first, then add a split shift.'); return; }
+  let insertAfter = tr, next = tr.nextElementSibling;
+  while (next && next.getAttribute('data-cont') === 'true') { insertAfter = next; next = next.nextElementSibling; }
+  const row = addEntryRow(true, insertAfter, inp.value);
+  const s = row.querySelector('.f-start'); if (s) s.focus();
+}
+
+function removeRow(btn){
+  const tr = btn.closest('tr');
+  if (tr.getAttribute('data-cont') === 'true') {
+    tr.remove();
+  } else {
+    let next = tr.nextElementSibling; const rm = [tr];
+    while (next && next.getAttribute('data-cont') === 'true') { rm.push(next); next = next.nextElementSibling; }
+    rm.forEach(r => r.remove());
+  }
+  if (!document.querySelector('#tc-body tr')) buildGrid();
+  recalcTotals();
+}
+
+function addLine(){
+  if (!currentMonthBounds()) { alert('Please choose the Month and Year at the top first.'); return; }
+  const row = addEntryRow(false, null, null);
+  const inp = row.querySelector('.f-date'); if (inp) { try { inp.focus(); } catch(e){} }
+}
+
+function updatePickerBounds(){
+  const b = currentMonthBounds();
+  document.querySelectorAll('#tc-body tr .f-date').forEach(inp => {
+    if (b) { inp.min = b.min; inp.max = b.max; inp.disabled = false; }
+    else { inp.removeAttribute('min'); inp.removeAttribute('max'); inp.disabled = true; }
+  });
+  document.querySelectorAll('#tc-body tr').forEach(tr => {
+    const dt = tr.querySelector('.date-text');
+    if (dt && !tr.hasAttribute('data-day') && tr.getAttribute('data-cont') !== 'true') {
+      dt.textContent = b ? 'mm/dd/yy' : 'Pick month/year first';
+      dt.classList.add('placeholder');
+    }
+  });
+}
+
+function onMonthYearChange(){
+  const hasData = Array.from(document.querySelectorAll('#tc-body tr')).some(tr => tr.hasAttribute('data-day'));
+  if (hasData) {
+    if (!confirm('Changing the month or year will clear the dates and hours you have entered. Continue?')) {
+      setSelectByText('f-month', prevMonth);
+      setSelectByText('f-year', prevYear);
+      updatePickerBounds();
+      return;
+    }
+    buildGrid();
+  }
+  prevMonth = document.getElementById('f-month').value;
+  prevYear  = document.getElementById('f-year').value;
+  updatePickerBounds();
+}
 
 /* ── Signature ── */
 function setSigMode(mode) {
@@ -723,8 +871,9 @@ function validateForm() {
 function buildRows() {
   const dayMap={};
   for(let d=1;d<=31;d++) dayMap[d]=[];
-  document.querySelectorAll('tr[data-day]').forEach(tr=>{
+  document.querySelectorAll('#tc-body tr[data-day]').forEach(tr=>{
     const day=parseInt(tr.getAttribute('data-day'));
+    if(!(day>=1 && day<=31)) return;
     dayMap[day].push({cont:tr.getAttribute('data-cont')==='true',start:tr.querySelector('.f-start').value,end:tr.querySelector('.f-end').value,total:tr.querySelector('.f-total').value,comp:tr.querySelector('.f-comp').value,sick:tr.querySelector('.f-sick').value,notes:tr.querySelector('.f-notes').value});
   });
   const grid=[];
@@ -755,6 +904,19 @@ function validateForSave() {
   return valid;
 }
 
+/* Each line with hours must have a date; returns {ok, dated} */
+function validateRows() {
+  let problem = false, dated = 0;
+  document.querySelectorAll('#tc-body tr').forEach(tr => {
+    const hasDay = tr.hasAttribute('data-day');
+    if (hasDay) dated++;
+    const content = ['.f-start','.f-end','.f-comp','.f-sick','.f-notes'].some(sel => { const el = tr.querySelector(sel); return el && el.value.trim() !== ''; });
+    if (!hasDay && content) { problem = true; tr.classList.add('row-invalid'); }
+    else if (hasDay) { tr.classList.remove('row-invalid'); }
+  });
+  return { ok: !problem, dated };
+}
+
 function showStatus(ok, msg) {
   const el=document.getElementById('submit-status');
   el.style.cssText='display:block;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:12px;line-height:1.6;'
@@ -765,6 +927,8 @@ function showStatus(ok, msg) {
 /* ── Save Draft: writes/updates a row with status 'draft' (supervisor never sees it) ── */
 async function saveDraft() {
   if(!validateForSave())return;
+  const rc=validateRows();
+  if(!rc.ok){ showStatus(false,'✗ Every line with hours needs a date. Please pick a date on each line (or remove it).'); return; }
   const d=getFormData();
   const btn=document.getElementById('save-draft-btn');
   const original=btn.innerHTML;
@@ -836,6 +1000,9 @@ async function deleteDraft() {
 /* ── Submit ── */
 async function submitTimesheet() {
   if(!validateForm())return;
+  const rc=validateRows();
+  if(!rc.ok){ showStatus(false,'✗ Every line with hours needs a date. Please pick a date on each line (or remove it).'); return; }
+  if(rc.dated===0){ showStatus(false,'✗ Please add at least one day before submitting.'); return; }
   if(!sigData){
     showStatus(false,'✗ Please add your signature before submitting. (You can Save Draft without signing.)');
     document.querySelector('.sig-block').scrollIntoView({behavior:'smooth',block:'center'});
@@ -903,6 +1070,10 @@ function downloadPDF(){if(!validateForm())return;const data=getFormData();buildP
   el.addEventListener('input',()=>document.getElementById(map[id])?.classList.remove('field-invalid'));
   el.addEventListener('change',()=>document.getElementById(map[id])?.classList.remove('field-invalid'));
 });
+
+/* Top Month/Year drive the per-line date pickers (bounds + change confirm) */
+document.getElementById('f-month').addEventListener('change', onMonthYearChange);
+document.getElementById('f-year').addEventListener('change', onMonthYearChange);
 </script>
 <script>
 /* Theme toggle: default follows the device setting; a manual choice is remembered. */
