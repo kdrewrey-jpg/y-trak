@@ -339,7 +339,8 @@ async function loadSheets() {
     document.getElementById('pending-body').innerHTML   = '<tr><td colspan="3" class="empty text2">Error loading timesheets.</td></tr>';
     return;
   }
-  allSheets = data || [];
+  // Exclude unsubmitted drafts — supervisors never see a timesheet until the employee submits it.
+  allSheets = (data || []).filter(s => s.status !== 'draft');
   setDefaultFilter();
   applyFilter();
 }

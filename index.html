@@ -216,6 +216,9 @@
     <div id="recalled-banner" class="recalled-banner" style="display:none;">
       <strong>&#8635; Recalled timesheet</strong> — Your previous timesheet has been loaded. Make your changes and resubmit.
     </div>
+    <div id="draft-banner" class="recalled-banner" style="display:none;background:#eef7f0;border-color:#a0d8b0;color:#1a6a30;">
+      <strong>&#128190; Saved draft loaded</strong> — Picking up where you left off. Keep editing and click <em>Save Draft</em> again to save more, or add your signature and <em>Submit</em> when you're done. Your supervisor does not see this until you submit.
+    </div>
     <div class="fields-grid">
       <div class="field" id="field-name">
         <label>Name <span style="color:#e53e3e">*</span></label>
@@ -322,13 +325,21 @@
   <div class="ts-card">
     <div class="val-banner" id="val-banner"></div>
     <div class="info-banner">
-      <strong>How to submit:</strong> Fill out your timesheet and click <em>Submit Timesheet</em>. Your supervisor will review it in the portal. Use <em>Download PDF</em> to save a copy for your records.
+      <strong>Save vs. Submit:</strong> Click <em>Save Draft</em> to save your progress and come back later — your supervisor will <strong>not</strong> see it yet. When your timesheet is complete, add your signature and click <em>Submit Timesheet</em> to send it for review. Use <em>Download PDF</em> to save a copy for your records.
     </div>
     <div class="submit-status" id="submit-status"></div>
     <div class="action-bar">
       <button class="action-btn" onclick="downloadPDF()">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/><path d="M2 12h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
         Download PDF
+      </button>
+      <button class="action-btn" id="delete-draft-btn" onclick="deleteDraft()" style="display:none;color:#c0392b;border-color:#e0a0a0;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 9h8l1-9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        Delete draft
+      </button>
+      <button class="action-btn" id="save-draft-btn" onclick="saveDraft()" style="border-color:#1a7a3a;color:#1a7a3a;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3h8l2 2v8H3V3z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none"/><path d="M5 3v3h5V3M5 13v-4h6v4" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" fill="none"/></svg>
+        Save Draft
       </button>
       <button class="action-btn primary" id="submit-btn" onclick="submitTimesheet()">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
@@ -347,6 +358,7 @@ const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const CORRECT_PIN = '38965';
 let sigData = null;
 let existingSheetId = null;
+let isDraft = false;   // true when the loaded row is a saved (unsubmitted) draft
 
 /* ── Year dropdown: current year + next two, rebuilt from today's date so it
       rolls forward automatically each January with no code change ── */
@@ -432,21 +444,33 @@ async function checkIdentity() {
   if (!name) { err.textContent = 'Please enter your full name.'; err.style.display = 'block'; return; }
   if (ssn.length !== 4) { err.textContent = 'Please enter the last 4 digits of your Social Security Number.'; err.style.display = 'block'; return; }
   btn.disabled = true; btn.textContent = 'Checking…';
-  const { data } = await sb.from('timesheets').select('*').ilike('employee_name', name).eq('ssn_last4', ssn).eq('status', 'returned').order('submitted_at', { ascending: false }).limit(1);
+  // A saved draft takes priority — one draft per employee, so resume it if present.
+  const { data: drafts } = await sb.from('timesheets').select('*').ilike('employee_name', name).eq('ssn_last4', ssn).eq('status', 'draft').limit(1);
+  let returned = null;
+  if (!drafts || drafts.length === 0) {
+    const { data: ret } = await sb.from('timesheets').select('*').ilike('employee_name', name).eq('ssn_last4', ssn).eq('status', 'returned').order('submitted_at', { ascending: false }).limit(1);
+    returned = ret;
+  }
   btn.disabled = false; btn.textContent = 'Continue';
   showTimesheetScreen();
   document.getElementById('f-name').value = name;
   document.getElementById('f-ssn').value  = ssn;
-  if (data && data.length > 0) {
-    existingSheetId = data[0].id;
-    prefillSheet(data[0], 'returned');
+  if (drafts && drafts.length > 0) {
+    existingSheetId = drafts[0].id;
+    isDraft = true;
+    prefillSheet(drafts[0], 'draft');
+    document.getElementById('delete-draft-btn').style.display = 'flex';
+  } else if (returned && returned.length > 0) {
+    existingSheetId = returned[0].id;
+    isDraft = false;
+    prefillSheet(returned[0], 'returned');
   } else {
     const notice = document.getElementById('returned-banner');
     notice.style.display = 'block';
     notice.style.background = '#eaf7ee';
     notice.style.borderColor = '#a0d8b0';
     notice.style.color = '#1a6a30';
-    notice.innerHTML = '&#10003; No returned timesheets found. Your name and last 4 have been pre-filled below.';
+    notice.innerHTML = '&#10003; No saved draft or returned timesheet found. Your name and last 4 have been pre-filled below.';
     setTimeout(() => { notice.style.display = 'none'; }, 4000);
     buildGrid();
   }
@@ -481,10 +505,12 @@ async function recallTimesheet() {
     return;
   }
   existingSheetId = sheet.id;
+  isDraft = (sheet.status === 'draft');
   showTimesheetScreen();
   document.getElementById('f-name').value = name;
   document.getElementById('f-ssn').value  = ssn;
-  prefillSheet(sheet, 'recalled');
+  prefillSheet(sheet, isDraft ? 'draft' : 'recalled');
+  if (isDraft) document.getElementById('delete-draft-btn').style.display = 'flex';
 }
 
 function showTimesheetScreen() {
@@ -499,6 +525,8 @@ function prefillSheet(s, mode) {
     document.getElementById('returned-note').textContent = s.return_note ? `Reason: ${s.return_note}` : 'Please review and resubmit your timesheet.';
   } else if (mode === 'recalled') {
     document.getElementById('recalled-banner').style.display = 'block';
+  } else if (mode === 'draft') {
+    document.getElementById('draft-banner').style.display = 'block';
   }
   const monthSel = document.getElementById('f-month');
   for (let i = 0; i < monthSel.options.length; i++) { if (monthSel.options[i].text === s.month) { monthSel.selectedIndex = i; break; } }
@@ -672,9 +700,107 @@ function getFormData() {
   return {name:document.getElementById('f-name').value||'',ssn:document.getElementById('f-ssn').value||'',status:document.getElementById('f-status').value||'',month:document.getElementById('f-month').value||'',year:document.getElementById('f-year').value||'',totTotal:document.getElementById('bar-total').textContent,totComp:document.getElementById('bar-comp').textContent,totSick:document.getElementById('bar-sick').textContent,empSrc:sigData||'',rows:buildRows()};
 }
 
+/* ── Minimal validation for Save Draft: just enough to identify the record ── */
+function validateForSave() {
+  let valid=true;const banner=document.getElementById('val-banner');const missing=[];
+  const checks=[
+    {id:'f-name',  fid:'field-name',   label:'Name',             test:v=>v.trim().length>0},
+    {id:'f-ssn',   fid:'field-ssn',    label:'Last 4 of Social', test:v=>v.trim().length===4},
+    {id:'f-month', fid:'field-month',  label:'Month',            test:v=>v!==''},
+    {id:'f-year',  fid:'field-year',   label:'Year',             test:v=>/^\d{4}$/.test(v.trim())}
+  ];
+  checks.forEach(c=>{const el=document.getElementById(c.id),f=document.getElementById(c.fid);const pass=c.test(el.value);f.classList.toggle('field-invalid',!pass);if(!pass){missing.push(c.label);valid=false;}});
+  if(!valid){banner.textContent='To save a draft, please fill in: '+missing.join(', ');banner.style.display='block';banner.scrollIntoView({behavior:'smooth',block:'center'});}
+  else banner.style.display='none';
+  return valid;
+}
+
+function showStatus(ok, msg) {
+  const el=document.getElementById('submit-status');
+  el.style.cssText='display:block;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:12px;line-height:1.6;'
+    + (ok ? 'background:#eaf7ee;border:1.5px solid #a0d8b0;color:#1a6a30;' : 'background:#fff0f0;border:1.5px solid #f0b0b0;color:#c0392b;');
+  el.textContent=msg;
+}
+
+/* ── Save Draft: writes/updates a row with status 'draft' (supervisor never sees it) ── */
+async function saveDraft() {
+  if(!validateForSave())return;
+  const d=getFormData();
+  const btn=document.getElementById('save-draft-btn');
+  const original=btn.innerHTML;
+  btn.disabled=true;btn.innerHTML='Saving&hellip;';
+  const payload={
+    employee_name:d.name, ssn_last4:d.ssn, employment_status:d.status,
+    month:d.month, year:d.year,
+    total_hours:d.totTotal, comp_hours:d.totComp, sick_hours:d.totSick,
+    emp_signature:d.empSrc||null, rows:d.rows, status:'draft'
+  };
+  try {
+    if(existingSheetId && isDraft){
+      // Update the existing draft in place
+      const res=await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${existingSheetId}`,{
+        method:'PATCH',
+        headers:{'Content-Type':'application/json','apikey':SERVICE_KEY,'Authorization':'Bearer '+SERVICE_KEY,'Prefer':'return=minimal'},
+        body:JSON.stringify(payload)
+      });
+      if(!res.ok) throw new Error('Save failed ('+res.status+')');
+    } else {
+      // Create a new draft
+      const res=await fetch('https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','apikey':SERVICE_KEY,'Authorization':'Bearer '+SERVICE_KEY,'Prefer':'return=representation'},
+        body:JSON.stringify(payload)
+      });
+      if(!res.ok) throw new Error('Save failed ('+res.status+')');
+      const rows=await res.json();
+      existingSheetId=Array.isArray(rows)?rows[0].id:rows.id;
+      isDraft=true;
+    }
+    document.getElementById('delete-draft-btn').style.display='flex';
+    document.getElementById('recalled-banner').style.display='none';
+    document.getElementById('returned-banner').style.display='none';
+    showStatus(true,'✓ Draft saved. You can close this and come back later to finish — your supervisor will not see it until you sign and submit.');
+  } catch(err) {
+    showStatus(false,'✗ Could not save draft: '+err.message);
+  }
+  btn.disabled=false;btn.innerHTML=original;
+}
+
+/* ── Delete Draft: discard the saved draft so a new timesheet can be started ── */
+async function deleteDraft() {
+  if(!existingSheetId || !isDraft) return;
+  if(!confirm('Delete this saved draft? Anything in it will be permanently removed, and you can then start a new timesheet.')) return;
+  const btn=document.getElementById('delete-draft-btn');
+  const original=btn.innerHTML;
+  btn.disabled=true;btn.innerHTML='Deleting&hellip;';
+  try {
+    const res=await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${existingSheetId}`,{
+      method:'DELETE',headers:{'apikey':SERVICE_KEY,'Authorization':'Bearer '+SERVICE_KEY}
+    });
+    if(!res.ok) throw new Error('Delete failed ('+res.status+')');
+    existingSheetId=null;isDraft=false;
+    // Reset to a fresh timesheet, keeping the person identified
+    document.getElementById('f-status').selectedIndex=0;
+    document.getElementById('f-month').selectedIndex=0;
+    document.getElementById('f-year').selectedIndex=0;
+    clearDraw();clearUpload();sigData=null;
+    buildGrid();recalcTotals();
+    btn.style.display='none';
+    showStatus(true,'✓ Draft deleted. You can now start a new timesheet.');
+  } catch(err) {
+    showStatus(false,'✗ Could not delete draft: '+err.message);
+    btn.disabled=false;btn.innerHTML=original;
+  }
+}
+
 /* ── Submit ── */
 async function submitTimesheet() {
   if(!validateForm())return;
+  if(!sigData){
+    showStatus(false,'✗ Please add your signature before submitting. (You can Save Draft without signing.)');
+    document.querySelector('.sig-block').scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
   const data=getFormData();
   const btn=document.getElementById('submit-btn');
   const statusEl=document.getElementById('submit-status');
@@ -691,8 +817,12 @@ async function submitTimesheet() {
       statusEl.style.cssText='display:block;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:12px;line-height:1.6;background:#eaf7ee;border:1.5px solid #a0d8b0;color:#1a6a30;';
       statusEl.textContent='✓ Timesheet submitted successfully! Your supervisor will review it shortly.';
       btn.innerHTML='✓ Submitted';
+      isDraft=false;
       document.getElementById('returned-banner').style.display='none';
       document.getElementById('recalled-banner').style.display='none';
+      document.getElementById('draft-banner').style.display='none';
+      document.getElementById('delete-draft-btn').style.display='none';
+      document.getElementById('save-draft-btn').style.display='none';
     } else { throw new Error(json.error||'Unknown error'); }
   } catch(err) {
     statusEl.style.cssText='display:block;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:12px;line-height:1.6;background:#fff0f0;border:1.5px solid #f0b0b0;color:#c0392b;';
