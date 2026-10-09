@@ -175,6 +175,44 @@
   .action-btn:hover { background: var(--btn-hover); }
   .action-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   .action-btn.primary:hover { background: var(--accent-hover); }
+
+  /* ── Mobile: turn the entry table into stacked day-cards (no sideways scroll) ── */
+  @media (max-width: 600px) {
+    .table-wrap { overflow-x: visible; }
+    table { min-width: 0; width: 100%; }
+    thead, tfoot { display: none; }
+    table, tbody { display: block; width: 100%; }
+    tbody tr {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;
+      border: 1.5px solid var(--border2); border-radius: 12px;
+      padding: 12px 14px; margin-bottom: 12px; background: var(--card);
+    }
+    tbody tr.cont-row { border-style: dashed; }
+    tbody tr:hover td, tbody tr.active-row td, tbody tr.cont-row td { background: transparent; }
+    tbody td { display: flex; flex-direction: column; gap: 3px; border: none !important; padding: 0 !important; background: transparent !important; }
+    tbody td::before { content: attr(data-label); font-size: 10px; font-weight: bold; color: var(--label); text-transform: uppercase; letter-spacing: 0.04em; }
+    tbody td.col-date { grid-column: 1 / -1; }
+    tbody td.col-date::before { content: "Date"; }
+    tbody td.col-start { grid-column: 1; }
+    tbody td.col-end { grid-column: 2; }
+    tbody td.col-total { grid-column: 1 / -1; }
+    tbody td.col-comp { grid-column: 1; }
+    tbody td.col-sick { grid-column: 2; }
+    tbody td.col-notes { grid-column: 1 / -1; }
+    tbody td.col-ins { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 10px; padding-top: 10px !important; border-top: 1px solid var(--border-soft) !important; }
+    tbody td.col-ins::before { display: none; }
+    /* bigger, touch-friendly inputs; 16px prevents iOS zoom-on-focus */
+    tbody .ci { font-size: 16px; padding: 10px 11px !important; border: 1.5px solid var(--border2); border-radius: 8px; background: var(--input-bg); }
+    tbody .ci:focus { border-color: var(--accent); }
+    tbody .ci.auto-val { background: var(--surface); }
+    .date-pick { min-height: 44px; border: 1.5px solid var(--border2); border-radius: 8px; background: var(--input-bg); padding: 0 11px; }
+    .date-text { font-size: 16px; padding: 10px 0; }
+    .split-date { font-size: 15px; padding: 11px 2px; }
+    .split-btn { font-size: 13px; padding: 10px 14px; }
+    .row-remove { font-size: 18px; padding: 8px 12px; margin-left: auto; }
+    .add-line-btn { width: 100%; justify-content: center; padding: 14px; font-size: 15px; }
+    .totals-bar { grid-template-columns: 1fr; gap: 8px; }
+  }
 </style>
 </head>
 <body>
@@ -712,12 +750,12 @@ function addEntryRow(isSplit, insertAfterTr, presetDateISO) {
     : `<button class="split-btn" onclick="addSplitShift(this)">+ Split Shift</button> <button class="row-remove" title="Remove this line" onclick="removeRow(this)">&#x2715;</button>`;
 
   tr.innerHTML = dateCell +
-    `<td><input class="ci f-start" inputmode="numeric"></td>` +
-    `<td><input class="ci f-end" inputmode="numeric"></td>` +
-    `<td class="col-total${isSplit?' cont':''}"><input class="ci f-total auto-val" readonly tabindex="-1"></td>` +
-    `<td><input class="ci f-comp" inputmode="decimal"></td>` +
-    `<td><input class="ci f-sick" inputmode="decimal"></td>` +
-    `<td><input class="ci f-notes"></td>` +
+    `<td class="col-start" data-label="Start"><input class="ci f-start" inputmode="numeric"></td>` +
+    `<td class="col-end" data-label="End"><input class="ci f-end" inputmode="numeric"></td>` +
+    `<td class="col-total${isSplit?' cont':''}" data-label="Total Hrs"><input class="ci f-total auto-val" readonly tabindex="-1"></td>` +
+    `<td class="col-comp" data-label="Comp Hrs"><input class="ci f-comp" inputmode="decimal"></td>` +
+    `<td class="col-sick" data-label="Sick Hrs"><input class="ci f-sick" inputmode="decimal"></td>` +
+    `<td class="col-notes" data-label="Notes"><input class="ci f-notes"></td>` +
     `<td class="col-ins">${actions}</td>`;
 
   if (insertAfterTr) insertAfterTr.parentNode.insertBefore(tr, insertAfterTr.nextSibling);
