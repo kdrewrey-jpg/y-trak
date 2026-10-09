@@ -881,7 +881,7 @@ function buildRows() {
     const shifts=dayMap[d];
     if(!shifts||shifts.length===0){grid.push({day:String(d),start:'',end:'',total:'',comp:'',sick:'',notes:''});}
     else if(shifts.length===1){grid.push({day:String(d),start:shifts[0].start,end:shifts[0].end,total:shifts[0].total,comp:shifts[0].comp,sick:shifts[0].sick,notes:shifts[0].notes});}
-    else{let totalH=0,totalC=0,totalS=0;const parts=[];shifts.forEach((s,i)=>{totalH+=parseFloat(s.total)||0;totalC+=parseFloat(s.comp)||0;totalS+=parseFloat(s.sick)||0;if(s.start||s.end)parts.push(`${s.start||'?'}-${s.end||'?'}${s.notes?' ('+s.notes+')':''}${i>0?' cont.':''}`);});grid.push({day:String(d),start:shifts[0].start,end:shifts[shifts.length-1].end,total:totalH>0?totalH.toFixed(2):'',comp:totalC>0?totalC.toFixed(2):'',sick:totalS>0?totalS.toFixed(2):'',notes:parts.join(' | ')});}
+    else{let totalH=0,totalC=0,totalS=0;const parts=[];shifts.forEach((s,i)=>{totalH+=parseFloat(s.total)||0;totalC+=parseFloat(s.comp)||0;totalS+=parseFloat(s.sick)||0;if(s.start||s.end)parts.push(`${s.start||'?'}-${s.end||'?'}${s.notes?' ('+s.notes+')':''}`);});grid.push({day:String(d),start:shifts[0].start,end:shifts[shifts.length-1].end,total:totalH>0?totalH.toFixed(2):'',comp:totalC>0?totalC.toFixed(2):'',sick:totalS>0?totalS.toFixed(2):'',notes:parts.length?'Split shift: '+parts.join(' | '):''});}
   }
   return grid;
 }
