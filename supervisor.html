@@ -72,7 +72,8 @@
 </div>
 
 <script>
-const VALID_PINS = ['38655', '11803', '38922'];
+const ADMIN_PIN  = '38655';              // Administrator view
+const VALID_PINS = ['11803', '38922'];   // Supervisor / Payroll chooser
 
 function showChooser() {
   document.getElementById('pin-wrap').style.display = 'none';
@@ -87,7 +88,10 @@ function showPin() {
 
 function checkPin() {
   const val = document.getElementById('pin').value.trim();
-  if (VALID_PINS.includes(val)) {
+  if (val === ADMIN_PIN) {
+    sessionStorage.setItem('ytrak-admin', '1');
+    window.location.href = '/admin.html';
+  } else if (VALID_PINS.includes(val)) {
     sessionStorage.setItem('ytrak-access', '1');   // authorized; view not chosen yet
     showChooser();
   } else {
@@ -105,6 +109,7 @@ function choose(view) {
 function backToPin() {
   sessionStorage.removeItem('ytrak-access');
   sessionStorage.removeItem('ytrak-staff');
+  sessionStorage.removeItem('ytrak-admin');
   document.getElementById('pin-error').style.display = 'none';
   showPin();
 }

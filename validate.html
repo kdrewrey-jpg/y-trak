@@ -247,38 +247,13 @@ const sb = supabase.createClient(
 );
 const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3Z2ZvbndnZW9pZXZneHd2eGxnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTgzOTgwNCwiZXhwIjoyMDkxNDE1ODA0fQ.yzHKNyoZ85hj2xxjW_byLStr-O9FOCPna9OVXvzthWI';
 
-const ROSTER = [
-  { name: 'Jerimaine Gooch',    ssn: '6587' },
-  { name: 'Thomas West',        ssn: '0430' },
-  { name: 'Taylor Byford',      ssn: '9212' },
-  { name: 'Tyler Wortham',      ssn: '8772' },
-  { name: 'Tony Hernandez',     ssn: '4330' },
-  { name: 'Dalton Coleman',     ssn: '9682' },
-  { name: 'Dalton Pelts',       ssn: '4320' },
-  { name: 'Abbigail Elza',      ssn: '8361' },
-  { name: 'Vernon Wilson',      ssn: '7525' },
-  { name: 'Cody Greer',         ssn: '1308' },
-  { name: 'Mike Lovelace Sr',   ssn: '1999' },
-  { name: 'Chris Jones',        ssn: '4350' },
-  { name: 'Randy Coleman',      ssn: '8370' },
-  { name: 'Ashley Jennings',    ssn: '4584' },
-  { name: 'Mitch Steen',        ssn: '8301' },
-  { name: 'Kurt Savage',        ssn: '5400' },
-  { name: 'Jeremy Turner',      ssn: '4998' },
-  { name: 'Terrence Turner',    ssn: '9967' },
-  { name: 'Brad Easley',        ssn: '0996' },
-  { name: 'Kelly Drewrey',      ssn: '1661' },
-  { name: 'Jerry Ferguson',     ssn: '7335' },
-  { name: 'Jesse James',        ssn: '5448' },
-  { name: 'Teresa Hernandez',   ssn: '6889' },
-  { name: 'Sandra Williams',    ssn: '4106' },
-  { name: 'Markee Telford',     ssn: '7436' },
-  { name: 'Justin Nail',        ssn: '2836' },
-  { name: 'Courtney Marion',    ssn: '2492' },
-  { name: 'Wade Myles',         ssn: '7681' },
-  { name: 'Rickey Pulley',      ssn: '5251' },
-  { name: 'Garrett Alston',     ssn: '7348' },
-];
+/* The employee roster now lives in the Supabase 'employees' table and is
+   managed from the Administrator view — loaded fresh on each visit. */
+let ROSTER = [];
+async function loadRoster() {
+  const { data } = await sb.from('employees').select('name, ssn_last4').order('name', { ascending: true });
+  ROSTER = (data || []).map(e => ({ name: e.name, ssn: e.ssn_last4 }));
+}
 
 let allSheets = [], filtered = [];
 let isDark = false;
@@ -328,6 +303,7 @@ async function saveSettings() {
 /* ── Data ── */
 async function init() {
   await sb.auth.signOut();
+  await loadRoster();
   await loadSettings();
   await loadSheets();
 }
