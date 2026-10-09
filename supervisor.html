@@ -7,7 +7,7 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; }
   body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-  .card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 36px 32px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+  .card { background: #fff; border: 1px solid #ddd; border-radius: 12px; padding: 36px 32px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
   .logo { font-size: 28px; font-weight: 900; color: #1a3a6b; letter-spacing: 2px; margin: 0 0 4px; }
   .dept { font-size: 12px; color: #888; margin: 0 0 6px; }
   .tag  { font-size: 12px; color: #666; margin: 0 0 24px; }
@@ -17,27 +17,79 @@
   .pin-btn { width: 100%; margin-top: 14px; padding: 13px; font-size: 15px; font-weight: bold; background: #1a5dc8; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-family: Arial, sans-serif; }
   .pin-btn:hover { background: #154fa8; }
   .pin-error { background: #fff0f0; border: 1px solid #f0b0b0; border-radius: 8px; padding: 9px 14px; font-size: 13px; color: #a00; margin-top: 12px; display: none; }
+
+  /* View chooser */
+  .choose-wrap { display: none; }
+  .choose-prompt { font-size: 14px; color: #444; margin: 0 0 20px; }
+  .choice-btn { width: 100%; display: flex; align-items: center; gap: 14px; text-align: left; padding: 16px 18px; margin-bottom: 12px; border: 1.5px solid #c0cce0; border-radius: 12px; background: #f7f9fc; cursor: pointer; font-family: Arial, sans-serif; transition: background 0.12s, border-color 0.12s; }
+  .choice-btn:hover { background: #e8f0fe; border-color: #1a5dc8; }
+  .choice-icon { flex: 0 0 42px; width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+  .choice-icon.sup { background: #e3ecfb; color: #1a3a6b; }
+  .choice-icon.pay { background: #e4f5ea; color: #1a7a3a; }
+  .choice-text { display: flex; flex-direction: column; }
+  .choice-title { font-size: 15px; font-weight: bold; color: #111; }
+  .choice-sub { font-size: 12px; color: #777; margin-top: 2px; }
+  .choose-back { background: none; border: none; color: #1a5dc8; font-size: 13px; cursor: pointer; text-decoration: underline; font-family: Arial, sans-serif; margin-top: 6px; }
 </style>
 </head>
 <body>
 <div class="card">
   <p class="logo">Y-TRAK</p>
   <p class="dept">Yalobusha County Sheriff's Department</p>
-  <p class="tag" id="portal-tag">Staff Portal</p>
-  <span class="badge">Authorized Personnel Only</span><br><br>
-  <input type="password" class="pin-input" id="pin" maxlength="10" inputmode="numeric" placeholder="•••••" onkeydown="if(event.key==='Enter') checkPin()">
-  <button class="pin-btn" onclick="checkPin()">Enter</button>
-  <div class="pin-error" id="pin-error">Incorrect PIN. Please try again.</div>
+  <p class="tag" id="portal-tag">Supervisor &amp; Payroll Portal</p>
+
+  <!-- PIN entry -->
+  <div id="pin-wrap">
+    <span class="badge">Authorized Personnel Only</span><br><br>
+    <input type="password" class="pin-input" id="pin" maxlength="10" inputmode="numeric" placeholder="•••••" onkeydown="if(event.key==='Enter') checkPin()">
+    <button class="pin-btn" onclick="checkPin()">Enter</button>
+    <div class="pin-error" id="pin-error">Incorrect PIN. Please try again.</div>
+  </div>
+
+  <!-- View chooser -->
+  <div id="choose-wrap" class="choose-wrap">
+    <p class="choose-prompt">Which view would you like to open?</p>
+    <button class="choice-btn" onclick="choose('supervisor')">
+      <span class="choice-icon sup">
+        <svg width="22" height="22" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      </span>
+      <span class="choice-text">
+        <span class="choice-title">Supervisor</span>
+        <span class="choice-sub">Review, validate, and approve timesheets</span>
+      </span>
+    </button>
+    <button class="choice-btn" onclick="choose('payroll')">
+      <span class="choice-icon pay">
+        <svg width="22" height="22" viewBox="0 0 16 16" fill="none"><rect x="3" y="1" width="10" height="5" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="1" y="6" width="14" height="7" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="4" y="10" width="8" height="4" rx="0.5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+      </span>
+      <span class="choice-text">
+        <span class="choice-title">Payroll</span>
+        <span class="choice-sub">View and print approved timesheets</span>
+      </span>
+    </button>
+    <button class="choose-back" onclick="backToPin()">← Enter a different PIN</button>
+  </div>
 </div>
+
 <script>
+const VALID_PINS = ['38655', '11803', '38922'];
+
+function showChooser() {
+  document.getElementById('pin-wrap').style.display = 'none';
+  document.getElementById('choose-wrap').style.display = 'block';
+}
+function showPin() {
+  document.getElementById('choose-wrap').style.display = 'none';
+  document.getElementById('pin-wrap').style.display = 'block';
+  const p = document.getElementById('pin');
+  p.value = ''; p.focus();
+}
+
 function checkPin() {
   const val = document.getElementById('pin').value.trim();
-  if (val === '38655' || val === '11803') {
-    sessionStorage.setItem('ytrak-staff', 'supervisor');
-    window.location.href = '/validate.html';
-  } else if (val === '38922') {
-    sessionStorage.setItem('ytrak-staff', 'payroll');
-    window.location.href = '/payroll.html';
+  if (VALID_PINS.includes(val)) {
+    sessionStorage.setItem('ytrak-access', '1');   // authorized; view not chosen yet
+    showChooser();
   } else {
     document.getElementById('pin-error').style.display = 'block';
     document.getElementById('pin').value = '';
@@ -45,24 +97,29 @@ function checkPin() {
   }
 }
 
-/* Update label as user types to hint which portal they're entering */
-document.getElementById('pin').addEventListener('input', function() {
-  const val = this.value.trim();
-  const tag = document.getElementById('portal-tag');
-  if (val === '38922') {
-    tag.textContent = 'Payroll Portal';
-  } else if (val === '38655' || val === '11803') {
-    tag.textContent = 'Staff Portal';
-  } else {
-    tag.textContent = 'Staff Portal';
-  }
+function choose(view) {
+  sessionStorage.setItem('ytrak-staff', view);   // 'supervisor' or 'payroll'
+  window.location.href = (view === 'payroll') ? '/payroll.html' : '/validate.html';
+}
+
+function backToPin() {
+  sessionStorage.removeItem('ytrak-access');
+  sessionStorage.removeItem('ytrak-staff');
+  document.getElementById('pin-error').style.display = 'none';
+  showPin();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('pin-wrap').style.display !== 'none') checkPin();
 });
 
-document.addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
-
-const role = sessionStorage.getItem('ytrak-staff');
-if (role === 'supervisor') window.location.href = '/validate.html';
-if (role === 'payroll')    window.location.href = '/payroll.html';
+/* If this session is already authorized, skip the PIN and show the chooser,
+   so the person can pick (or switch) views without re-entering a PIN. */
+if (sessionStorage.getItem('ytrak-access') === '1' || sessionStorage.getItem('ytrak-staff')) {
+  showChooser();
+} else {
+  document.getElementById('pin').focus();
+}
 </script>
 </body>
 </html>

@@ -116,7 +116,7 @@
     <h1>Y-TRAK — Staff Portal</h1>
     <p>Yalobusha County Sheriff's Department</p>
   </div>
-  <button class="sign-out" onclick="signOut()">Sign out</button>
+  <span><button class="sign-out" onclick="switchView()">Switch view</button> &nbsp;·&nbsp; <button class="sign-out" onclick="signOut()">Sign out</button></span>
 </div>
 
 <div class="container">
@@ -434,7 +434,8 @@ function renderTables() {
 }
 
 function openSheet(id) { window.location.href = `/review.html?id=${id}`; }
-function signOut() { sessionStorage.removeItem('ytrak-staff'); window.location.href = '/supervisor.html'; }
+function switchView() { sessionStorage.removeItem('ytrak-staff'); window.location.href = '/supervisor.html'; }
+function signOut() { sessionStorage.removeItem('ytrak-staff'); sessionStorage.removeItem('ytrak-access'); window.location.href = '/supervisor.html'; }
 
 function toggleMode() {
   isDark = !isDark;
