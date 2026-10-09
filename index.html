@@ -248,8 +248,10 @@
       </div>
       <div class="field" id="field-year">
         <label>Year <span style="color:#e53e3e">*</span></label>
-        <input type="text" id="f-year" maxlength="4" placeholder="2026" inputmode="numeric">
-        <span class="field-error">Required — 4-digit year</span>
+        <select id="f-year">
+          <option value="" disabled selected>Select year</option>
+        </select>
+        <span class="field-error">Required</span>
       </div>
     </div>
   </div>
@@ -345,6 +347,36 @@ const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const CORRECT_PIN = '38965';
 let sigData = null;
 let existingSheetId = null;
+
+/* ── Year dropdown: current year + next two, rebuilt from today's date so it
+      rolls forward automatically each January with no code change ── */
+function populateYears() {
+  const sel = document.getElementById('f-year');
+  if (!sel) return;
+  const current = new Date().getFullYear();
+  for (let i = 0; i < 3; i++) {
+    const y = String(current + i);
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y;
+    sel.appendChild(opt);
+  }
+}
+populateYears();
+
+/* Ensure a given year is selectable even if it's outside the current three
+   (e.g. recalling or resubmitting an older timesheet) */
+function ensureYearOption(year) {
+  if (!year) return;
+  const sel = document.getElementById('f-year');
+  const exists = Array.from(sel.options).some(o => o.value === String(year));
+  if (!exists) {
+    const opt = document.createElement('option');
+    opt.value = String(year);
+    opt.textContent = String(year);
+    sel.appendChild(opt);
+  }
+}
 
 /* ── Due date banner ── */
 async function loadDueBanner() {
@@ -470,6 +502,7 @@ function prefillSheet(s, mode) {
   }
   const monthSel = document.getElementById('f-month');
   for (let i = 0; i < monthSel.options.length; i++) { if (monthSel.options[i].text === s.month) { monthSel.selectedIndex = i; break; } }
+  ensureYearOption(s.year);
   document.getElementById('f-year').value = s.year || '';
   const statusSel = document.getElementById('f-status');
   for (let i = 0; i < statusSel.options.length; i++) { if (statusSel.options[i].text === s.employment_status) { statusSel.selectedIndex = i; break; } }
