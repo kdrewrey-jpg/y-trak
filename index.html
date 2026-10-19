@@ -45,8 +45,11 @@
   }
   *, *::before, *::after { box-sizing: border-box; }
   body { font-family: Arial, sans-serif; background: var(--bg); margin: 0; padding: 16px; color: var(--text); transition: background 0.2s, color 0.2s; }
-  .theme-toggle { position: fixed; top: 12px; right: 12px; z-index: 100; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: bold; padding: 7px 12px; border-radius: 20px; border: 1px solid var(--border-accent); background: var(--card); color: var(--heading); cursor: pointer; font-family: Arial, sans-serif; box-shadow: 0 2px 8px var(--shadow); }
+  .top-controls { position: fixed; top: 12px; right: 12px; z-index: 100; display: flex; align-items: center; gap: 8px; }
+  .theme-toggle, .logout-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: bold; padding: 7px 12px; border-radius: 20px; border: 1px solid var(--border-accent); background: var(--card); color: var(--heading); cursor: pointer; font-family: Arial, sans-serif; box-shadow: 0 2px 8px var(--shadow); }
   .theme-toggle:hover { background: var(--input-bg); }
+  .logout-btn { display: none; }
+  .logout-btn:hover { color: #fff; background: #c0392b; border-color: #c0392b; }
   .pin-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: -16px; background: var(--bg); }
   .pin-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 40px 32px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 4px 24px var(--shadow); }
   .pin-logo { font-size: 28px; font-weight: 900; color: var(--heading); letter-spacing: 2px; margin: 0 0 4px; }
@@ -130,9 +133,11 @@
   .date-text { font-size: 13px; color: var(--text); padding: 5px 4px; cursor: pointer; white-space: nowrap; user-select: none; }
   .date-text.placeholder { color: var(--faint); }
   .split-date { font-size: 12px; color: #8b5cf6; font-style: italic; padding: 5px 4px; white-space: nowrap; display: inline-block; }
-  .split-btn { background: none; border: 1px solid var(--border-accent); border-radius: 5px; color: var(--accent); cursor: pointer; font-size: 10px; font-weight: bold; padding: 3px 7px; font-family: Arial, sans-serif; white-space: nowrap; }
+  /* Split Shift & Delete share identical box metrics for symmetry; only color differs. */
+  .split-btn, .row-remove { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 96px; box-sizing: border-box; background: none; border: 1px solid var(--border-accent); border-radius: 5px; cursor: pointer; font-size: 10px; font-weight: bold; padding: 4px 8px; font-family: Arial, sans-serif; white-space: nowrap; line-height: 1.4; }
+  .split-btn { color: var(--accent); }
   .split-btn:hover { background: var(--row-active); }
-  .row-remove { display: inline-flex; align-items: center; gap: 4px; background: none; border: 1px solid var(--border-accent); border-radius: 5px; color: var(--muted2); cursor: pointer; font-size: 10px; font-weight: bold; padding: 3px 8px; font-family: Arial, sans-serif; white-space: nowrap; line-height: 1.4; }
+  .row-remove { color: var(--muted2); }
   .row-remove:hover { color: #fff; background: #c0392b; border-color: #c0392b; }
   .row-invalid td { background: #fff5f5 !important; }
   .row-invalid .date-text { color: #e53e3e; font-weight: bold; }
@@ -208,8 +213,7 @@
     .date-pick { min-height: 44px; border: 1.5px solid var(--border2); border-radius: 8px; background: var(--input-bg); padding: 0 11px; }
     .date-text { font-size: 16px; padding: 10px 0; }
     .split-date { font-size: 15px; padding: 11px 2px; }
-    .split-btn { font-size: 13px; padding: 10px 14px; }
-    .row-remove { font-size: 13px; padding: 9px 14px; margin-left: auto; }
+    .split-btn, .row-remove { font-size: 13px; padding: 10px 14px; flex: 1; min-width: 0; }
     .add-line-btn { width: 100%; justify-content: center; padding: 14px; font-size: 15px; }
     .totals-bar { grid-template-columns: 1fr; gap: 8px; }
   }
@@ -217,7 +221,13 @@
 </head>
 <body>
 
-<button class="theme-toggle" data-theme-toggle onclick="toggleTheme()" aria-label="Toggle light or dark mode"></button>
+<div class="top-controls">
+  <button class="logout-btn" id="logout-btn" onclick="logout()" title="Log out and return to the name / last 4 screen">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="flex:0 0 auto;"><path d="M6 2H3v12h3M10 11l3-3-3-3M13 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+    Logout
+  </button>
+  <button class="theme-toggle" data-theme-toggle onclick="toggleTheme()" aria-label="Toggle light or dark mode"></button>
+</div>
 
 <!-- PIN Screen -->
 <div class="pin-screen" id="pin-screen">
@@ -636,6 +646,22 @@ async function recallTimesheet() {
 function showTimesheetScreen() {
   document.getElementById('id-screen').style.display = 'none';
   document.getElementById('timesheet-screen').style.display = 'block';
+  document.getElementById('logout-btn').style.display = 'inline-flex';
+}
+
+/* Log out of the timesheet: return to the name / last-4 (identity) screen and reset state. */
+function logout() {
+  existingSheetId = null; isDraft = false; viewOnly = false; approverName = ''; sigData = null;
+  document.getElementById('timesheet-screen').style.display = 'none';
+  document.getElementById('id-screen').style.display = 'flex';
+  document.getElementById('logout-btn').style.display = 'none';
+  // Clear the identity fields and any open recall box for the next person.
+  ['id-name','id-ssn','recall-name','recall-ssn','recall-year'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['recall-month'].forEach(id => { const el = document.getElementById(id); if (el) el.selectedIndex = 0; });
+  const rb = document.getElementById('recall-box'); if (rb) rb.style.display = 'none';
+  const re = document.getElementById('recall-error'); if (re) re.style.display = 'none';
+  const ie = document.getElementById('id-error'); if (ie) ie.style.display = 'none';
+  try { document.getElementById('id-name').focus(); } catch(e) {}
 }
 
 function prefillSheet(s, mode) {
@@ -781,9 +807,10 @@ function addEntryRow(isSplit, insertAfterTr, presetDateISO) {
   }
 
   const trash = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" style="flex:0 0 auto;"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 9h8l1-9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
+  const plus = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" style="flex:0 0 auto;"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
   const actions = isSplit
     ? `<button class="row-remove" title="Delete this split shift" onclick="removeRow(this)">${trash} Delete</button>`
-    : `<button class="split-btn" onclick="addSplitShift(this)">+ Split Shift</button> <button class="row-remove" title="Delete this date" onclick="removeRow(this)">${trash} Delete</button>`;
+    : `<button class="split-btn" title="Add a split shift on this day" onclick="addSplitShift(this)">${plus} Split Shift</button> <button class="row-remove" title="Delete this date" onclick="removeRow(this)">${trash} Delete</button>`;
 
   tr.innerHTML = dateCell +
     `<td class="col-start" data-label="Start"><input class="ci f-start" inputmode="numeric"></td>` +
