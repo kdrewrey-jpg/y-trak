@@ -458,6 +458,7 @@ let sigData = null;
 let existingSheetId = null;
 let isDraft = false;   // true when the loaded row is a saved (unsubmitted) draft
 let viewOnly = false;  // true when an already-approved timesheet is loaded (read-only)
+let approverName = '';  // name of the approving official on a loaded approved timesheet
 let prevMonth = '', prevYear = '';   // remembered top Month/Year, for the change-confirm
 
 /* ── Year dropdown: current year + next two, rebuilt from today's date so it
@@ -618,7 +619,8 @@ async function recallTimesheet() {
   }
   const sheet = data[0];
   if (sheet.status === 'approved') {
-    err.textContent = `Your ${month} ${year} timesheet has been signed by the Chief Deputy and cannot be recalled. Please contact the Chief to return it for corrections.`;
+    const who = (sheet.approved_by_name && sheet.approved_by_name.trim()) ? sheet.approved_by_name.trim() : 'the approving official';
+    err.textContent = `Timesheet approved, contact ${who}. Your ${month} ${year} timesheet has been approved and cannot be recalled — contact ${who} to return it for corrections.`;
     err.style.display = 'block';
     return;
   }
@@ -651,7 +653,9 @@ function prefillSheet(s, mode) {
     try { if (s.submitted_at) when = ' on ' + new Date(s.submitted_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }); } catch(e) {}
     if (s.status === 'approved') {
       banner.style.background = '#eaf7ee'; banner.style.borderColor = '#a0d8b0'; banner.style.color = '#1a6a30';
-      banner.innerHTML = `<strong>&#10003; Already approved</strong> — Your ${s.month} ${s.year} timesheet has been approved and signed by the Chief Deputy${when}. This is a read-only copy; it can no longer be changed here. If a correction is needed, please contact the Chief.`;
+      const who = (s.approved_by_name && s.approved_by_name.trim()) ? s.approved_by_name.trim() : 'the approving official';
+      approverName = who;
+      banner.innerHTML = `<strong>&#10003; Timesheet approved, contact ${who}.</strong> Your ${s.month} ${s.year} timesheet was approved${when} and is a read-only copy here; it can no longer be changed. Contact ${who} for any correction.`;
     } else {
       const statusWord = s.status === 'reviewed' ? 'validated by your supervisor' : 'submitted and is awaiting review';
       banner.innerHTML = `<strong>&#9993; Already submitted</strong> — Your ${s.month} ${s.year} timesheet was ${statusWord}${when}. Your work was <strong>not</strong> lost. If you need to change it, edit below and click <em>Submit Timesheet</em> again to update it, or ask your supervisor to return it.`;
@@ -1003,7 +1007,7 @@ function showStatus(ok, msg) {
 
 /* ── Save Draft: writes/updates a row with status 'draft' (supervisor never sees it) ── */
 async function saveDraft() {
-  if(viewOnly){ showStatus(false,'This timesheet is already approved and signed — it can’t be changed here. Please contact the Chief for any correction.'); return; }
+  if(viewOnly){ showStatus(false,'Timesheet approved, contact '+(approverName||'the approving official')+'. This timesheet is approved and read-only — it can’t be changed here.'); return; }
   if(!validateForSave())return;
   const rc=validateRows();
   if(!rc.ok){ showStatus(false,'✗ Every line with hours needs a date. Please pick a date on each line (or remove it).'); return; }
@@ -1077,7 +1081,7 @@ async function deleteDraft() {
 
 /* ── Submit ── */
 async function submitTimesheet() {
-  if(viewOnly){ showStatus(false,'This timesheet is already approved and signed — it can’t be changed here. Please contact the Chief for any correction.'); return; }
+  if(viewOnly){ showStatus(false,'Timesheet approved, contact '+(approverName||'the approving official')+'. This timesheet is approved and read-only — it can’t be changed here.'); return; }
   if(!validateForm())return;
   const rc=validateRows();
   if(!rc.ok){ showStatus(false,'✗ Every line with hours needs a date. Please pick a date on each line (or remove it).'); return; }
