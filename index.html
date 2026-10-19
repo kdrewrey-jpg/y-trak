@@ -85,6 +85,24 @@
   .id-error { background: #fff0f0; border: 1px solid #f0b0b0; border-radius: 8px; padding: 9px 14px; font-size: 13px; color: #a00; margin-top: 12px; display: none; }
   .recall-error { background: #fff0f0; border: 1px solid #f0b0b0; border-radius: 8px; padding: 9px 14px; font-size: 13px; color: #a00; margin-top: 12px; display: none; }
 
+  /* Identity verification modal */
+  .verify-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+  .verify-overlay.open { display: flex; }
+  .verify-box { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 28px 26px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+  .verify-q { font-size: 12px; font-weight: bold; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 14px; }
+  .verify-name { font-size: 24px; font-weight: 800; color: var(--heading); margin: 0 0 6px; line-height: 1.2; }
+  .verify-sub { font-size: 14px; color: var(--text); margin: 0 0 22px; }
+  .verify-actions { display: flex; gap: 12px; }
+  .verify-btn { flex: 1; padding: 13px; font-size: 15px; font-weight: bold; border-radius: 10px; cursor: pointer; font-family: Arial, sans-serif; border: 1.5px solid var(--border-accent); }
+  .verify-btn.no { background: var(--card); color: var(--text); }
+  .verify-btn.no:hover { background: #fff0f0; border-color: #e0a0a0; color: #c0392b; }
+  .verify-btn.yes { background: #1a7a3a; color: #fff; border-color: #1a7a3a; }
+  .verify-btn.yes:hover { background: #155e2e; }
+  .verify-choices { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+  .verify-choice { width: 100%; padding: 13px; font-size: 15px; font-weight: bold; border-radius: 10px; cursor: pointer; font-family: Arial, sans-serif; border: 1.5px solid var(--border-accent); background: var(--input-bg); color: var(--heading); }
+  .verify-choice:hover { background: var(--row-active); border-color: var(--accent); }
+  .verify-cancel { background: none; border: none; color: var(--accent); font-size: 13px; cursor: pointer; text-decoration: underline; font-family: Arial, sans-serif; margin-top: 4px; }
+
   /* Recall box */
   .recall-box { display: none; margin-top: 4px; background: var(--recall-bg); border: 1.5px solid var(--border-accent); border-radius: 10px; padding: 16px; }
   .recall-box-title { font-size: 12px; font-weight: bold; color: var(--heading); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 12px; }
@@ -248,11 +266,7 @@
     <p class="id-sub">Yalobusha County Sheriff's Department — Please identify yourself</p>
     <div class="due-banner" id="due-banner"></div>
 
-    <!-- New timesheet fields -->
-    <div class="id-field">
-      <label>Full Name <span style="color:#e53e3e">*</span></label>
-      <input type="text" id="id-name" placeholder="Enter your full name" autocomplete="name">
-    </div>
+    <!-- New timesheet: last 4 only, then verify who it is -->
     <div class="id-field">
       <label>Last 4 of Social <span style="color:#e53e3e">*</span></label>
       <input type="text" id="id-ssn" maxlength="4" placeholder="XXXX" inputmode="numeric" onkeydown="if(event.key==='Enter') checkIdentity()">
@@ -302,6 +316,20 @@
       <div class="recall-error" id="recall-error"></div>
     </div>
 
+  </div>
+</div>
+
+<!-- Identity verification modal -->
+<div class="verify-overlay" id="verify-overlay">
+  <div class="verify-box">
+    <p class="verify-q">Please verify your identity</p>
+    <div class="verify-name" id="verify-name"></div>
+    <p class="verify-sub" id="verify-sub">Is this you?</p>
+    <div class="verify-actions" id="verify-actions">
+      <button class="verify-btn no" onclick="denyIdentity()">No</button>
+      <button class="verify-btn yes" id="verify-yes" onclick="confirmIdentity()">Yes, that's me</button>
+    </div>
+    <div class="verify-choices" id="verify-choices" style="display:none;"></div>
   </div>
 </div>
 
@@ -522,7 +550,7 @@ function checkPin() {
     document.getElementById('id-screen').style.display = 'flex';
     sessionStorage.setItem('ytrak-auth', '1');
     loadDueBanner();
-    document.getElementById('id-name').focus();
+    document.getElementById('id-ssn').focus();
   } else {
     document.getElementById('pin-error').style.display = 'block';
     document.getElementById('pin-input').value = '';
@@ -546,25 +574,79 @@ function toggleRecall() {
 }
 
 /* ── Identity check (new timesheet) ── */
+let pendingSsn = '';   // last 4 being verified on the identity screen
+
+/* Step 1 — employee enters last 4; look them up on the roster and ask them to verify. */
 async function checkIdentity() {
-  const name = document.getElementById('id-name').value.trim();
   const ssn  = document.getElementById('id-ssn').value.trim();
   const err  = document.getElementById('id-error');
   const btn  = document.getElementById('id-btn');
   err.style.display = 'none';
-  if (!name) { err.textContent = 'Please enter your full name.'; err.style.display = 'block'; return; }
-  if (ssn.length !== 4) { err.textContent = 'Please enter the last 4 digits of your Social Security Number.'; err.style.display = 'block'; return; }
+  if (!/^\d{4}$/.test(ssn)) { err.textContent = 'Please enter the last 4 digits of your Social Security Number.'; err.style.display = 'block'; return; }
   btn.disabled = true; btn.textContent = 'Checking…';
+  const { data: matches, error } = await sb.from('employees').select('name, ssn_last4').eq('ssn_last4', ssn).order('name', { ascending: true });
+  btn.disabled = false; btn.textContent = 'Continue';
+  if (error) { err.textContent = 'Could not reach the system. Please try again.'; err.style.display = 'block'; return; }
+  if (!matches || matches.length === 0) {
+    err.textContent = 'No employee was found with that last 4. Please check your entry, or see your supervisor if you were recently added.';
+    err.style.display = 'block';
+    return;
+  }
+  pendingSsn = ssn;
+  const yesBtn = document.getElementById('verify-yes');
+  const actions = document.getElementById('verify-actions');
+  const choices = document.getElementById('verify-choices');
+  const sub = document.getElementById('verify-sub');
+  if (matches.length === 1) {
+    // One person — simple Yes / No confirm.
+    document.getElementById('verify-name').textContent = matches[0].name;
+    sub.textContent = 'Is this you?';
+    actions.style.display = 'flex';
+    choices.style.display = 'none';
+    yesBtn.setAttribute('data-name', matches[0].name);
+  } else {
+    // Rare: more than one person shares these last 4 — let them pick.
+    document.getElementById('verify-name').textContent = '';
+    sub.textContent = 'Select your name:';
+    actions.style.display = 'none';
+    choices.innerHTML = matches.map(m => `<button class="verify-choice" onclick="pickIdentity(this)" data-name="${m.name.replace(/"/g,'&quot;')}">${m.name}</button>`).join('')
+      + `<button class="verify-cancel" onclick="denyIdentity()">None of these — go back</button>`;
+    choices.style.display = 'flex';
+  }
+  document.getElementById('verify-overlay').classList.add('open');
+}
+
+/* "Yes, that's me" on a single match */
+function confirmIdentity() {
+  const name = document.getElementById('verify-yes').getAttribute('data-name') || '';
+  proceedWithIdentity(name, pendingSsn);
+}
+
+/* Picking a name when several share the last 4 */
+function pickIdentity(btn) {
+  proceedWithIdentity(btn.getAttribute('data-name') || '', pendingSsn);
+}
+
+/* "No" / go back — return to the last-4 entry */
+function denyIdentity() {
+  document.getElementById('verify-overlay').classList.remove('open');
+  const f = document.getElementById('id-ssn');
+  f.value = ''; try { f.focus(); } catch(e) {}
+}
+
+/* Step 2 — identity confirmed; load any existing timesheet (matched by last 4) and open the sheet. */
+async function proceedWithIdentity(name, ssn) {
+  document.getElementById('verify-overlay').classList.remove('open');
+  const btn = document.getElementById('id-btn');
+  btn.disabled = true; btn.textContent = 'Opening…';
   // A saved draft takes priority — one draft per employee, so resume it if present.
-  const { data: drafts } = await sb.from('timesheets').select('*').ilike('employee_name', name).eq('ssn_last4', ssn).eq('status', 'draft').limit(1);
+  const { data: drafts } = await sb.from('timesheets').select('*').eq('ssn_last4', ssn).eq('status', 'draft').limit(1);
   let returned = null, submitted = null;
   if (!drafts || drafts.length === 0) {
-    const { data: ret } = await sb.from('timesheets').select('*').ilike('employee_name', name).eq('ssn_last4', ssn).eq('status', 'returned').order('submitted_at', { ascending: false }).limit(1);
+    const { data: ret } = await sb.from('timesheets').select('*').eq('ssn_last4', ssn).eq('status', 'returned').order('submitted_at', { ascending: false }).limit(1);
     returned = ret;
     if (!returned || returned.length === 0) {
-      // Already-submitted timesheet (awaiting review, validated, or approved) — so the
-      // employee isn't told "nothing found" when their timesheet is actually in the queue.
-      const { data: sub } = await sb.from('timesheets').select('*').ilike('employee_name', name).eq('ssn_last4', ssn).in('status', ['pending', 'reviewed', 'approved']).order('submitted_at', { ascending: false }).limit(1);
+      const { data: sub } = await sb.from('timesheets').select('*').eq('ssn_last4', ssn).in('status', ['pending', 'reviewed', 'approved']).order('submitted_at', { ascending: false }).limit(1);
       submitted = sub;
     }
   }
@@ -586,11 +668,9 @@ async function checkIdentity() {
     isDraft = false;
     prefillSheet(s, 'submitted');
     if (s.status === 'approved') {
-      // Approved & signed by the Chief Deputy — view only; cannot be resubmitted here.
       existingSheetId = null;
       viewOnly = true;
     } else {
-      // Pending / reviewed — loaded so they can review and, if needed, resubmit (updates in place).
       existingSheetId = s.id;
     }
   } else {
@@ -599,7 +679,7 @@ async function checkIdentity() {
     notice.style.background = '#eaf7ee';
     notice.style.borderColor = '#a0d8b0';
     notice.style.color = '#1a6a30';
-    notice.innerHTML = '&#10003; No saved draft or returned timesheet found. Your name and last 4 have been pre-filled below.';
+    notice.innerHTML = `&#10003; Welcome, ${name}. Start your timesheet below.`;
     setTimeout(() => { notice.style.display = 'none'; }, 4000);
     buildGrid();
   }
@@ -656,12 +736,13 @@ function logout() {
   document.getElementById('id-screen').style.display = 'flex';
   document.getElementById('logout-btn').style.display = 'none';
   // Clear the identity fields and any open recall box for the next person.
-  ['id-name','id-ssn','recall-name','recall-ssn','recall-year'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['id-ssn','recall-name','recall-ssn','recall-year'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   ['recall-month'].forEach(id => { const el = document.getElementById(id); if (el) el.selectedIndex = 0; });
   const rb = document.getElementById('recall-box'); if (rb) rb.style.display = 'none';
   const re = document.getElementById('recall-error'); if (re) re.style.display = 'none';
   const ie = document.getElementById('id-error'); if (ie) ie.style.display = 'none';
-  try { document.getElementById('id-name').focus(); } catch(e) {}
+  const vo = document.getElementById('verify-overlay'); if (vo) vo.classList.remove('open');
+  try { document.getElementById('id-ssn').focus(); } catch(e) {}
 }
 
 function prefillSheet(s, mode) {
