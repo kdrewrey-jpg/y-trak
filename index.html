@@ -657,8 +657,7 @@ function prefillSheet(s, mode) {
       approverName = who;
       banner.innerHTML = `<strong>&#10003; Timesheet approved, contact ${who}.</strong> Your ${s.month} ${s.year} timesheet was approved${when} and is a read-only copy here; it can no longer be changed. Contact ${who} for any correction.`;
     } else {
-      const statusWord = s.status === 'reviewed' ? 'validated by your supervisor' : 'submitted and is awaiting review';
-      banner.innerHTML = `<strong>&#9993; Already submitted</strong> — Your ${s.month} ${s.year} timesheet was ${statusWord}${when}. Your work was <strong>not</strong> lost. If you need to change it, edit below and click <em>Submit Timesheet</em> again to update it, or ask your supervisor to return it.`;
+      banner.innerHTML = `<strong>&#9993; Timesheet Previously Submitted</strong> — Your ${s.month} ${s.year} timesheet has been submitted and is awaiting approval. You may make any changes until approved. Once edits are made, select <em>Submit Timesheet</em> again.`;
     }
     banner.style.display = 'block';
   }
