@@ -312,6 +312,7 @@
     <div id="draft-banner" class="recalled-banner" style="display:none;background:#eef7f0;border-color:#a0d8b0;color:#1a6a30;">
       <strong>&#128190; Saved draft loaded</strong> — Picking up where you left off. Keep editing and click <em>Save Draft</em> again to save more, or add your signature and <em>Submit</em> when you're done. Your supervisor does not see this until you submit.
     </div>
+    <div id="submitted-banner" class="recalled-banner" style="display:none;background:#fff8e0;border-color:#f0c030;color:#5a4000;"></div>
     <div class="fields-grid">
       <div class="field" id="field-name">
         <label>Name <span style="color:#e53e3e">*</span></label>
@@ -456,6 +457,7 @@ const CORRECT_PIN = '38965';
 let sigData = null;
 let existingSheetId = null;
 let isDraft = false;   // true when the loaded row is a saved (unsubmitted) draft
+let viewOnly = false;  // true when an already-approved timesheet is loaded (read-only)
 let prevMonth = '', prevYear = '';   // remembered top Month/Year, for the change-confirm
 
 /* ── Year dropdown: current year + next two, rebuilt from today's date so it
@@ -544,10 +546,16 @@ async function checkIdentity() {
   btn.disabled = true; btn.textContent = 'Checking…';
   // A saved draft takes priority — one draft per employee, so resume it if present.
   const { data: drafts } = await sb.from('timesheets').select('*').ilike('employee_name', name).eq('ssn_last4', ssn).eq('status', 'draft').limit(1);
-  let returned = null;
+  let returned = null, submitted = null;
   if (!drafts || drafts.length === 0) {
     const { data: ret } = await sb.from('timesheets').select('*').ilike('employee_name', name).eq('ssn_last4', ssn).eq('status', 'returned').order('submitted_at', { ascending: false }).limit(1);
     returned = ret;
+    if (!returned || returned.length === 0) {
+      // Already-submitted timesheet (awaiting review, validated, or approved) — so the
+      // employee isn't told "nothing found" when their timesheet is actually in the queue.
+      const { data: sub } = await sb.from('timesheets').select('*').ilike('employee_name', name).eq('ssn_last4', ssn).in('status', ['pending', 'reviewed', 'approved']).order('submitted_at', { ascending: false }).limit(1);
+      submitted = sub;
+    }
   }
   btn.disabled = false; btn.textContent = 'Continue';
   showTimesheetScreen();
@@ -562,6 +570,18 @@ async function checkIdentity() {
     existingSheetId = returned[0].id;
     isDraft = false;
     prefillSheet(returned[0], 'returned');
+  } else if (submitted && submitted.length > 0) {
+    const s = submitted[0];
+    isDraft = false;
+    prefillSheet(s, 'submitted');
+    if (s.status === 'approved') {
+      // Approved & signed by the Chief Deputy — view only; cannot be resubmitted here.
+      existingSheetId = null;
+      viewOnly = true;
+    } else {
+      // Pending / reviewed — loaded so they can review and, if needed, resubmit (updates in place).
+      existingSheetId = s.id;
+    }
   } else {
     const notice = document.getElementById('returned-banner');
     notice.style.display = 'block';
@@ -625,6 +645,18 @@ function prefillSheet(s, mode) {
     document.getElementById('recalled-banner').style.display = 'block';
   } else if (mode === 'draft') {
     document.getElementById('draft-banner').style.display = 'block';
+  } else if (mode === 'submitted') {
+    const banner = document.getElementById('submitted-banner');
+    let when = '';
+    try { if (s.submitted_at) when = ' on ' + new Date(s.submitted_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }); } catch(e) {}
+    if (s.status === 'approved') {
+      banner.style.background = '#eaf7ee'; banner.style.borderColor = '#a0d8b0'; banner.style.color = '#1a6a30';
+      banner.innerHTML = `<strong>&#10003; Already approved</strong> — Your ${s.month} ${s.year} timesheet has been approved and signed by the Chief Deputy${when}. This is a read-only copy; it can no longer be changed here. If a correction is needed, please contact the Chief.`;
+    } else {
+      const statusWord = s.status === 'reviewed' ? 'validated by your supervisor' : 'submitted and is awaiting review';
+      banner.innerHTML = `<strong>&#9993; Already submitted</strong> — Your ${s.month} ${s.year} timesheet was ${statusWord}${when}. Your work was <strong>not</strong> lost. If you need to change it, edit below and click <em>Submit Timesheet</em> again to update it, or ask your supervisor to return it.`;
+    }
+    banner.style.display = 'block';
   }
   const monthSel = document.getElementById('f-month');
   for (let i = 0; i < monthSel.options.length; i++) { if (monthSel.options[i].text === s.month) { monthSel.selectedIndex = i; break; } }
@@ -855,6 +887,13 @@ function onMonthYearChange(){
       return;
     }
     buildGrid();
+    // Switching to a different pay period means this is a NEW timesheet — detach from any
+    // auto-loaded draft/returned/submitted record so a later submit can't overwrite it.
+    existingSheetId = null; isDraft = false; viewOnly = false;
+    ['returned-banner','recalled-banner','draft-banner','submitted-banner'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    document.getElementById('delete-draft-btn').style.display = 'none';
+    document.getElementById('save-draft-btn').style.display = 'flex';
+    document.getElementById('submit-btn').style.display = 'flex';
   }
   prevMonth = document.getElementById('f-month').value;
   prevYear  = document.getElementById('f-year').value;
@@ -964,6 +1003,7 @@ function showStatus(ok, msg) {
 
 /* ── Save Draft: writes/updates a row with status 'draft' (supervisor never sees it) ── */
 async function saveDraft() {
+  if(viewOnly){ showStatus(false,'This timesheet is already approved and signed — it can’t be changed here. Please contact the Chief for any correction.'); return; }
   if(!validateForSave())return;
   const rc=validateRows();
   if(!rc.ok){ showStatus(false,'✗ Every line with hours needs a date. Please pick a date on each line (or remove it).'); return; }
@@ -1037,6 +1077,7 @@ async function deleteDraft() {
 
 /* ── Submit ── */
 async function submitTimesheet() {
+  if(viewOnly){ showStatus(false,'This timesheet is already approved and signed — it can’t be changed here. Please contact the Chief for any correction.'); return; }
   if(!validateForm())return;
   const rc=validateRows();
   if(!rc.ok){ showStatus(false,'✗ Every line with hours needs a date. Please pick a date on each line (or remove it).'); return; }
@@ -1066,6 +1107,7 @@ async function submitTimesheet() {
       document.getElementById('returned-banner').style.display='none';
       document.getElementById('recalled-banner').style.display='none';
       document.getElementById('draft-banner').style.display='none';
+      document.getElementById('submitted-banner').style.display='none';
       document.getElementById('delete-draft-btn').style.display='none';
       document.getElementById('save-draft-btn').style.display='none';
     } else { throw new Error(json.error||'Unknown error'); }
