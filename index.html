@@ -122,7 +122,7 @@
   .day-num.cont { color: #8b5cf6; font-weight: bold; font-style: italic; }
   td.col-total { background: var(--col-total); }
   td.col-total.cont { background: var(--row-cont-hover); }
-  td.col-ins { width: 150px; text-align: left; white-space: nowrap; border-color: transparent !important; background: transparent !important; }
+  td.col-ins { width: 205px; text-align: left; white-space: nowrap; border-color: transparent !important; background: transparent !important; }
   .col-date { width: 104px; }
   .date-pick { position: relative; min-height: 26px; display: flex; align-items: center; }
   .date-pick .f-date { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: none; padding: 0; margin: 0; }
@@ -132,8 +132,8 @@
   .split-date { font-size: 12px; color: #8b5cf6; font-style: italic; padding: 5px 4px; white-space: nowrap; display: inline-block; }
   .split-btn { background: none; border: 1px solid var(--border-accent); border-radius: 5px; color: var(--accent); cursor: pointer; font-size: 10px; font-weight: bold; padding: 3px 7px; font-family: Arial, sans-serif; white-space: nowrap; }
   .split-btn:hover { background: var(--row-active); }
-  .row-remove { background: none; border: none; color: var(--border3); cursor: pointer; font-size: 13px; padding: 2px 5px; line-height: 1; }
-  .row-remove:hover { color: #e53e3e; }
+  .row-remove { display: inline-flex; align-items: center; gap: 4px; background: none; border: 1px solid var(--border-accent); border-radius: 5px; color: var(--muted2); cursor: pointer; font-size: 10px; font-weight: bold; padding: 3px 8px; font-family: Arial, sans-serif; white-space: nowrap; line-height: 1.4; }
+  .row-remove:hover { color: #fff; background: #c0392b; border-color: #c0392b; }
   .row-invalid td { background: #fff5f5 !important; }
   .row-invalid .date-text { color: #e53e3e; font-weight: bold; }
   .add-line-btn { display: inline-flex; align-items: center; gap: 7px; margin: 2px 0 18px; padding: 10px 18px; background: var(--accent); color: #fff; border: none; border-radius: 9px; font-size: 13px; font-weight: bold; cursor: pointer; font-family: Arial, sans-serif; }
@@ -209,7 +209,7 @@
     .date-text { font-size: 16px; padding: 10px 0; }
     .split-date { font-size: 15px; padding: 11px 2px; }
     .split-btn { font-size: 13px; padding: 10px 14px; }
-    .row-remove { font-size: 18px; padding: 8px 12px; margin-left: auto; }
+    .row-remove { font-size: 13px; padding: 9px 14px; margin-left: auto; }
     .add-line-btn { width: 100%; justify-content: center; padding: 14px; font-size: 15px; }
     .totals-bar { grid-template-columns: 1fr; gap: 8px; }
   }
@@ -780,9 +780,10 @@ function addEntryRow(isSplit, insertAfterTr, presetDateISO) {
     dateCell = `<td class="col-date"><div class="date-pick"><span class="date-text placeholder">mm/dd/yy</span><input type="date" class="f-date" onchange="onDateChange(this)" onclick="try{this.showPicker&&this.showPicker()}catch(e){}"></div></td>`;
   }
 
+  const trash = `<svg width="11" height="11" viewBox="0 0 16 16" fill="none" style="flex:0 0 auto;"><path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 9h8l1-9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`;
   const actions = isSplit
-    ? `<button class="row-remove" title="Remove this split" onclick="removeRow(this)">&#x2715;</button>`
-    : `<button class="split-btn" onclick="addSplitShift(this)">+ Split Shift</button> <button class="row-remove" title="Remove this line" onclick="removeRow(this)">&#x2715;</button>`;
+    ? `<button class="row-remove" title="Delete this split shift" onclick="removeRow(this)">${trash} Delete</button>`
+    : `<button class="split-btn" onclick="addSplitShift(this)">+ Split Shift</button> <button class="row-remove" title="Delete this date" onclick="removeRow(this)">${trash} Delete</button>`;
 
   tr.innerHTML = dateCell +
     `<td class="col-start" data-label="Start"><input class="ci f-start" inputmode="numeric"></td>` +
@@ -824,7 +825,31 @@ function onDateChange(input){
     if (dt) { dt.textContent = 'mm/dd/yy'; dt.classList.add('placeholder'); }
     propagateDateToSplits(tr, '');
   }
+  sortRowsByDate();
   recalcTotals();
+  // After the row slots into chronological order, move focus to its Start field for easy entry.
+  if (val) { const s = tr.querySelector('.f-start'); if (s) { try { s.focus(); } catch(e){} } }
+}
+
+/* Re-order the entry rows by date (ascending). Each dated line keeps its split
+   shifts directly beneath it; blank/undated lines stay at the bottom for entry. */
+function sortRowsByDate(){
+  const tbody = document.getElementById('tc-body');
+  const trs = Array.from(tbody.children);
+  const groups = []; let cur = null;
+  trs.forEach(tr => {
+    if (tr.getAttribute('data-cont') === 'true') {
+      if (cur) { cur.rows.push(tr); }
+      else { cur = { day: 99, rows: [tr] }; groups.push(cur); }   // orphan split (shouldn't happen) -> bottom
+    } else {
+      const d = tr.hasAttribute('data-day') ? parseInt(tr.getAttribute('data-day'), 10) : 99;
+      cur = { day: (d >= 1 && d <= 31) ? d : 99, rows: [tr] };
+      groups.push(cur);
+    }
+  });
+  groups.forEach((g, i) => g._i = i);                 // preserve original order for ties / undated
+  groups.sort((a, b) => (a.day - b.day) || (a._i - b._i));
+  groups.forEach(g => g.rows.forEach(r => tbody.appendChild(r)));
 }
 
 function propagateDateToSplits(primaryTr, iso){
