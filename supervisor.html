@@ -26,6 +26,7 @@
   .choice-icon { flex: 0 0 42px; width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
   .choice-icon.sup { background: #e3ecfb; color: #1a3a6b; }
   .choice-icon.pay { background: #e4f5ea; color: #1a7a3a; }
+  .choice-icon.adm { background: #f3e8fb; color: #6b2a9a; }
   .choice-text { display: flex; flex-direction: column; }
   .choice-title { font-size: 15px; font-weight: bold; color: #111; }
   .choice-sub { font-size: 12px; color: #777; margin-top: 2px; }
@@ -49,33 +50,45 @@
   <!-- View chooser -->
   <div id="choose-wrap" class="choose-wrap">
     <p class="choose-prompt">Which view would you like to open?</p>
-    <button class="choice-btn" onclick="choose('supervisor')">
-      <span class="choice-icon sup">
-        <svg width="22" height="22" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-      </span>
-      <span class="choice-text">
-        <span class="choice-title">Supervisor</span>
-        <span class="choice-sub">Review, validate, and approve timesheets</span>
-      </span>
-    </button>
-    <button class="choice-btn" onclick="choose('payroll')">
-      <span class="choice-icon pay">
-        <svg width="22" height="22" viewBox="0 0 16 16" fill="none"><rect x="3" y="1" width="10" height="5" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="1" y="6" width="14" height="7" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="4" y="10" width="8" height="4" rx="0.5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
-      </span>
-      <span class="choice-text">
-        <span class="choice-title">Payroll</span>
-        <span class="choice-sub">View and print approved timesheets</span>
-      </span>
-    </button>
+    <div id="choice-list"></div>
     <button class="choose-back" onclick="backToPin()">← Enter a different PIN</button>
   </div>
 </div>
 
 <script>
-const ADMIN_PIN  = '38655';              // Administrator view
-const VALID_PINS = ['11803', '38922'];   // Supervisor / Payroll chooser
+// Which views each PIN may open
+const PIN_VIEWS = {
+  '38655': ['supervisor', 'payroll', 'admin'],   // Super admin
+  '11803': ['supervisor', 'payroll'],            // Supervisor
+  '38922': ['payroll']                           // Payroll
+};
+const VIEW_DEFS = {
+  supervisor: { title: 'Supervisor', sub: 'Review, validate, and approve timesheets', cls: 'sup',
+    icon: '<svg width="22" height="22" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>' },
+  payroll: { title: 'Payroll', sub: 'View and print approved timesheets', cls: 'pay',
+    icon: '<svg width="22" height="22" viewBox="0 0 16 16" fill="none"><rect x="3" y="1" width="10" height="5" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="1" y="6" width="14" height="7" rx="1" stroke="currentColor" stroke-width="1.3" fill="none"/><rect x="4" y="10" width="8" height="4" rx="0.5" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>' },
+  admin: { title: 'Administrator', sub: 'Add or remove employees', cls: 'adm',
+    icon: '<svg width="22" height="22" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5" r="2.6" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M1.5 13c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/><path d="M12.5 4v4M10.5 6h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>' }
+};
+const VIEW_PAGES = { supervisor: '/validate.html', payroll: '/payroll.html', admin: '/admin.html' };
+
+function allowedViews() {
+  try { return JSON.parse(sessionStorage.getItem('ytrak-views') || '[]'); } catch (e) { return []; }
+}
 
 function showChooser() {
+  const list = document.getElementById('choice-list');
+  list.innerHTML = '';
+  allowedViews().forEach(v => {
+    const d = VIEW_DEFS[v]; if (!d) return;
+    const b = document.createElement('button');
+    b.className = 'choice-btn';
+    b.onclick = () => choose(v);
+    b.innerHTML = '<span class="choice-icon ' + d.cls + '">' + d.icon + '</span>' +
+      '<span class="choice-text"><span class="choice-title">' + d.title + '</span>' +
+      '<span class="choice-sub">' + d.sub + '</span></span>';
+    list.appendChild(b);
+  });
   document.getElementById('pin-wrap').style.display = 'none';
   document.getElementById('choose-wrap').style.display = 'block';
 }
@@ -88,11 +101,11 @@ function showPin() {
 
 function checkPin() {
   const val = document.getElementById('pin').value.trim();
-  if (val === ADMIN_PIN) {
-    sessionStorage.setItem('ytrak-admin', '1');
-    window.location.href = '/admin.html';
-  } else if (VALID_PINS.includes(val)) {
-    sessionStorage.setItem('ytrak-access', '1');   // authorized; view not chosen yet
+  if (PIN_VIEWS[val]) {
+    sessionStorage.setItem('ytrak-access', '1');
+    sessionStorage.setItem('ytrak-views', JSON.stringify(PIN_VIEWS[val]));
+    sessionStorage.removeItem('ytrak-staff');
+    sessionStorage.removeItem('ytrak-admin');
     showChooser();
   } else {
     document.getElementById('pin-error').style.display = 'block';
@@ -102,14 +115,20 @@ function checkPin() {
 }
 
 function choose(view) {
-  sessionStorage.setItem('ytrak-staff', view);   // 'supervisor' or 'payroll'
-  window.location.href = (view === 'payroll') ? '/payroll.html' : '/validate.html';
+  if (!allowedViews().includes(view)) return;
+  if (view === 'admin') {
+    sessionStorage.setItem('ytrak-admin', '1');
+  } else {
+    sessionStorage.setItem('ytrak-staff', view);   // 'supervisor' or 'payroll'
+  }
+  window.location.href = VIEW_PAGES[view];
 }
 
 function backToPin() {
   sessionStorage.removeItem('ytrak-access');
   sessionStorage.removeItem('ytrak-staff');
   sessionStorage.removeItem('ytrak-admin');
+  sessionStorage.removeItem('ytrak-views');
   document.getElementById('pin-error').style.display = 'none';
   showPin();
 }
@@ -120,7 +139,7 @@ document.addEventListener('keydown', e => {
 
 /* If this session is already authorized, skip the PIN and show the chooser,
    so the person can pick (or switch) views without re-entering a PIN. */
-if (sessionStorage.getItem('ytrak-access') === '1' || sessionStorage.getItem('ytrak-staff')) {
+if (sessionStorage.getItem('ytrak-access') === '1' && allowedViews().length) {
   showChooser();
 } else {
   document.getElementById('pin').focus();

@@ -116,7 +116,7 @@
     <h1>Y-TRAK — Staff Portal</h1>
     <p>Yalobusha County Sheriff's Department</p>
   </div>
-  <span><button class="sign-out" onclick="switchView()">Switch view</button> &nbsp;·&nbsp; <button class="sign-out" onclick="signOut()">Sign out</button></span>
+  <span><span id="switch-wrap"><button class="sign-out" onclick="switchView()">Switch view</button> &nbsp;·&nbsp; </span><button class="sign-out" onclick="signOut()">Sign out</button></span>
 </div>
 
 <div class="container">
@@ -239,7 +239,8 @@
 </div>
 
 <script>
-if (!sessionStorage.getItem('ytrak-staff')) window.location.href = '/supervisor.html';
+function viewsAllowed() { try { return JSON.parse(sessionStorage.getItem('ytrak-views') || '[]'); } catch (e) { return []; } }
+if (sessionStorage.getItem('ytrak-staff') !== 'supervisor' || !viewsAllowed().includes('supervisor')) window.location.href = '/supervisor.html';
 
 const sb = supabase.createClient(
   'https://kwgfonwgeoievgxwvxlg.supabase.co',
@@ -410,8 +411,9 @@ function renderTables() {
 }
 
 function openSheet(id) { window.location.href = `/review.html?id=${id}`; }
-function switchView() { sessionStorage.removeItem('ytrak-staff'); window.location.href = '/supervisor.html'; }
-function signOut() { sessionStorage.removeItem('ytrak-staff'); sessionStorage.removeItem('ytrak-access'); window.location.href = '/supervisor.html'; }
+function switchView() { sessionStorage.removeItem('ytrak-staff'); sessionStorage.removeItem('ytrak-admin'); window.location.href = '/supervisor.html'; }
+function signOut() { ['ytrak-staff','ytrak-access','ytrak-admin','ytrak-views'].forEach(k => sessionStorage.removeItem(k)); window.location.href = '/supervisor.html'; }
+if (viewsAllowed().length < 2) document.getElementById('switch-wrap').style.display = 'none';
 
 function toggleMode() {
   isDark = !isDark;

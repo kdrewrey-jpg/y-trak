@@ -56,6 +56,7 @@
     <p>Yalobusha County Sheriff's Department</p>
   </div>
   <div class="links">
+    <button onclick="switchView()">Switch view</button>
     <button onclick="signOut()">Sign out</button>
   </div>
 </div>
@@ -105,7 +106,8 @@
 
 <script>
 /* Admin access gate */
-if (sessionStorage.getItem('ytrak-admin') !== '1') window.location.href = '/supervisor.html';
+function viewsAllowed() { try { return JSON.parse(sessionStorage.getItem('ytrak-views') || '[]'); } catch (e) { return []; } }
+if (sessionStorage.getItem('ytrak-admin') !== '1' || !viewsAllowed().includes('admin')) window.location.href = '/supervisor.html';
 
 const sb = supabase.createClient(
   'https://kwgfonwgeoievgxwvxlg.supabase.co',
@@ -196,10 +198,12 @@ async function deleteEmployee(id, name, btn) {
   } catch (err) { showStatus(false, '✗ Could not delete: ' + err.message); btn.disabled = false; btn.textContent = 'Delete'; }
 }
 
-function signOut() {
+function switchView() {
   sessionStorage.removeItem('ytrak-admin');
-  sessionStorage.removeItem('ytrak-access');
-  sessionStorage.removeItem('ytrak-staff');
+  window.location.href = '/supervisor.html';
+}
+function signOut() {
+  ['ytrak-staff','ytrak-access','ytrak-admin','ytrak-views'].forEach(k => sessionStorage.removeItem(k));
   window.location.href = '/supervisor.html';
 }
 
