@@ -6,8 +6,24 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
+  const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3Z2ZvbndnZW9pZXZneHd2eGxnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTgzOTgwNCwiZXhwIjoyMDkxNDE1ODA0fQ.yzHKNyoZ85hj2xxjW_byLStr-O9FOCPna9OVXvzthWI';
+
   try {
     const d = JSON.parse(event.body);
+
+    // Server-side maintenance gate: refuse new submissions while maintenance mode is on,
+    // so the lock holds even for a page that was already open when it was switched on.
+    try {
+      const ms = await fetch('https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/settings?id=eq.global&select=maintenance_mode', {
+        headers: { 'apikey': SERVICE_KEY, 'Authorization': 'Bearer ' + SERVICE_KEY }
+      });
+      if (ms.ok) {
+        const rows = await ms.json();
+        if (Array.isArray(rows) && rows[0] && rows[0].maintenance_mode === true) {
+          return { statusCode: 503, headers: cors(), body: JSON.stringify({ success: false, error: 'Y-TRAK is in maintenance mode. Please try again shortly.' }) };
+        }
+      }
+    } catch (e) { /* if the check fails, fall through and allow the submission */ }
 
     const res = await fetch('https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets', {
       method: 'POST',

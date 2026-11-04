@@ -223,7 +223,8 @@
 </div>
 
 <script>
-if (!sessionStorage.getItem('ytrak-staff')) window.location.href = '/supervisor.html';
+function viewsAllowed() { try { return JSON.parse(sessionStorage.getItem('ytrak-views') || '[]'); } catch (e) { return []; } }
+if (sessionStorage.getItem('ytrak-staff') !== 'supervisor' || !viewsAllowed().includes('supervisor')) window.location.href = '/supervisor.html';
 
 const sb = supabase.createClient(
   'https://kwgfonwgeoievgxwvxlg.supabase.co',

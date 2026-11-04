@@ -294,10 +294,6 @@
     <div class="recall-box" id="recall-box">
       <p class="recall-box-title">&#8635; Recall a Previous Timesheet</p>
       <div class="id-field">
-        <label>Full Name <span style="color:#e53e3e">*</span></label>
-        <input type="text" id="recall-name" placeholder="Enter your full name" autocomplete="name">
-      </div>
-      <div class="id-field">
         <label>Last 4 of Social <span style="color:#e53e3e">*</span></label>
         <input type="text" id="recall-ssn" maxlength="4" placeholder="XXXX" inputmode="numeric">
       </div>
@@ -609,7 +605,7 @@ function toggleRecall() {
   const box = document.getElementById('recall-box');
   const isOpen = box.style.display === 'block';
   box.style.display = isOpen ? 'none' : 'block';
-  if (!isOpen) document.getElementById('recall-name').focus();
+  if (!isOpen) { const el = document.getElementById('recall-ssn'); if (el) el.focus(); }
 }
 
 /* ── Identity check (new timesheet) ── */
@@ -726,19 +722,17 @@ async function proceedWithIdentity(name, ssn) {
 
 /* ── Recall timesheet (self-contained) ── */
 async function recallTimesheet() {
-  const name  = document.getElementById('recall-name').value.trim();
   const ssn   = document.getElementById('recall-ssn').value.trim();
   const month = document.getElementById('recall-month').value;
   const year  = document.getElementById('recall-year').value.trim();
   const err   = document.getElementById('recall-error');
   const btn   = document.getElementById('recall-btn');
   err.style.display = 'none';
-  if (!name)            { err.textContent = 'Please enter your full name.'; err.style.display = 'block'; return; }
-  if (ssn.length !== 4) { err.textContent = 'Please enter your last 4 digits of Social Security Number.'; err.style.display = 'block'; return; }
+  if (!/^\d{4}$/.test(ssn)) { err.textContent = 'Please enter the last 4 digits of your Social Security Number.'; err.style.display = 'block'; return; }
   if (!month)           { err.textContent = 'Please select a month.'; err.style.display = 'block'; return; }
   if (!/^\d{4}$/.test(year)) { err.textContent = 'Please enter a valid 4-digit year.'; err.style.display = 'block'; return; }
   btn.disabled = true; btn.textContent = 'Searching…';
-  const { data } = await sb.from('timesheets').select('*').ilike('employee_name', name).eq('ssn_last4', ssn).eq('month', month).eq('year', year).order('submitted_at', { ascending: false }).limit(1);
+  const { data } = await sb.from('timesheets').select('*').eq('ssn_last4', ssn).eq('month', month).eq('year', year).order('submitted_at', { ascending: false }).limit(1);
   btn.disabled = false;
   btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="vertical-align:middle;margin-right:4px;"><path d="M2 8a6 6 0 106-6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/><path d="M2 4v4h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Load Timesheet';
   if (!data || data.length === 0) {
@@ -756,7 +750,7 @@ async function recallTimesheet() {
   existingSheetId = sheet.id;
   isDraft = (sheet.status === 'draft');
   showTimesheetScreen();
-  document.getElementById('f-name').value = name;
+  document.getElementById('f-name').value = sheet.employee_name || '';
   document.getElementById('f-ssn').value  = ssn;
   prefillSheet(sheet, isDraft ? 'draft' : 'recalled');
   if (isDraft) document.getElementById('delete-draft-btn').style.display = 'flex';
@@ -775,7 +769,7 @@ function logout() {
   document.getElementById('id-screen').style.display = 'flex';
   document.getElementById('logout-btn').style.display = 'none';
   // Clear the identity fields and any open recall box for the next person.
-  ['id-ssn','recall-name','recall-ssn','recall-year'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['id-ssn','recall-ssn','recall-year'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   ['recall-month'].forEach(id => { const el = document.getElementById(id); if (el) el.selectedIndex = 0; });
   const rb = document.getElementById('recall-box'); if (rb) rb.style.display = 'none';
   const re = document.getElementById('recall-error'); if (re) re.style.display = 'none';
@@ -1270,13 +1264,17 @@ async function submitTimesheet() {
   btn.disabled=true;btn.innerHTML='Submitting&hellip;';
   statusEl.style.display='none';
   try {
-    if(existingSheetId){
-      await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${existingSheetId}`,{method:'DELETE',headers:{'apikey':SERVICE_KEY,'Authorization':'Bearer '+SERVICE_KEY}});
-      existingSheetId=null;
-    }
+    // Create the new submission FIRST, then remove the old record only once it succeeds.
+    // (Deleting first risked losing the timesheet if the submit then failed.)
+    const oldId=existingSheetId;
     const res=await fetch('/.netlify/functions/submit-timesheet',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
     const json=await res.json();
     if(json.success){
+      // New pending row is saved — safe to delete the prior draft/returned/pending record.
+      if(oldId){
+        try { await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/timesheets?id=eq.${oldId}`,{method:'DELETE',headers:{'apikey':SERVICE_KEY,'Authorization':'Bearer '+SERVICE_KEY}}); } catch(e){}
+        existingSheetId=null;
+      }
       statusEl.style.cssText='display:block;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:12px;line-height:1.6;background:#eaf7ee;border:1.5px solid #a0d8b0;color:#1a6a30;';
       statusEl.textContent='✓ Timesheet submitted successfully! Your supervisor will review it shortly.';
       btn.innerHTML='✓ Submitted';
