@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>(function(){try{var t=localStorage.getItem('ytrak-theme');if(t!=='light'&&t!=='dark'){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <title>Y-TRAK Supervisors</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -88,6 +89,39 @@
   .name-input:focus { outline: none; border-color: #1a5dc8; }
   .return-note-input { width: 100%; padding: 9px 12px; font-size: 14px; border: 1px solid #ccc; border-radius: 7px; font-family: Arial, sans-serif; min-height: 80px; resize: vertical; }
   .return-note-input:focus { outline: none; border-color: #c07000; }
+
+  /* Dark mode */
+  html[data-theme="dark"] body { background:#0f1117; color:#e8eaf0; }
+  html[data-theme="dark"] .card { background:#1a1d23; border-color:rgba(255,255,255,0.1); }
+  html[data-theme="dark"] .card h2, html[data-theme="dark"] .meta-value { color:#e8eaf0; }
+  html[data-theme="dark"] .meta-label, html[data-theme="dark"] .sig-label { color:#9aa3b2; }
+  html[data-theme="dark"] thead th { color:#aab2c0; background:#222a38; border-color:rgba(255,255,255,0.1); }
+  html[data-theme="dark"] tbody td { border-color:rgba(255,255,255,0.08); color:#e8eaf0; }
+  html[data-theme="dark"] tfoot td { background:#22262e; border-color:rgba(255,255,255,0.1); color:#e8eaf0; }
+  html[data-theme="dark"] .metric { background:#22262e; }
+  html[data-theme="dark"] .metric-label { color:#9aa3b2; }
+  html[data-theme="dark"] .metric-value { color:#e8eaf0; }
+  html[data-theme="dark"] .sig-img-wrap { background:#fff; border-radius:4px; }
+  html[data-theme="dark"] .btn { background:#22262e; color:#e8eaf0; border-color:rgba(255,255,255,0.14); }
+  html[data-theme="dark"] .btn:hover { background:#2a2f38; }
+  html[data-theme="dark"] .modal { background:#1a1d23; color:#e8eaf0; }
+  html[data-theme="dark"] .modal p { color:#9aa3b2; }
+  html[data-theme="dark"] .name-input, html[data-theme="dark"] .return-note-input { background:#22262e; border-color:rgba(255,255,255,0.14); color:#e8eaf0; }
+  html[data-theme="dark"] .sig-toggle { border-color:rgba(255,255,255,0.14); }
+  html[data-theme="dark"] .sig-toggle button { background:#22262e; color:#9aa3b2; }
+  html[data-theme="dark"] .modal-btn { background:#22262e; color:#e8eaf0; border-color:rgba(255,255,255,0.14); }
+  html[data-theme="dark"] .canvas-wrap, html[data-theme="dark"] .upload-box { background:#fff; }
+  html[data-theme="dark"] .btn.validate, html[data-theme="dark"] .btn.print { background:#3b82f6; color:#fff; border-color:#3b82f6; }
+  html[data-theme="dark"] .btn.validate:hover, html[data-theme="dark"] .btn.print:hover { background:#2f6fd6; }
+  html[data-theme="dark"] .btn.approve { background:#1a7a3a; color:#fff; border-color:#1a7a3a; }
+  html[data-theme="dark"] .btn.approve:hover { background:#155e2e; }
+  html[data-theme="dark"] .btn.delete, html[data-theme="dark"] .btn.unapprove { background:#2a1416; color:#f0a0a0; border-color:#5a2a2a; }
+  html[data-theme="dark"] .btn.delete:hover, html[data-theme="dark"] .btn.unapprove:hover { background:#3a1a1c; }
+  html[data-theme="dark"] .btn.return-emp { background:#2a2410; color:#e0c060; border-color:#5a4a20; }
+  html[data-theme="dark"] .btn.return-emp:hover { background:#3a3416; }
+  html[data-theme="dark"] .modal-btn.confirm { background:#1a7a3a; color:#fff; border-color:#1a7a3a; }
+  html[data-theme="dark"] .modal-btn.return-confirm { background:#c07000; color:#fff; border-color:#c07000; }
+
 </style>
 </head>
 <body>
@@ -97,7 +131,7 @@
     <h1>Y-TRAK — Timesheet Review</h1>
     <p>Yalobusha County Sheriff's Department</p>
   </div>
-  <button class="back-btn" onclick="goBack()">← Back</button>
+  <span style="display:inline-flex;align-items:center;gap:12px;"><button data-theme-toggle class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle light or dark mode" style="font-size:12px;font-weight:bold;padding:6px 11px;border-radius:20px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:#fff;cursor:pointer;font-family:Arial,sans-serif;display:inline-flex;align-items:center;gap:5px;"></button><button class="back-btn" onclick="goBack()">← Back</button></span>
 </div>
 
 <div class="container">
@@ -495,6 +529,16 @@ async function downloadPDF(){const doc=await buildPDF();doc.save(`${sheetData.em
 async function printSheet(){const doc=await buildPDF();const blob=doc.output('blob');const url=URL.createObjectURL(blob);const win=window.open(url);if(win)win.onload=()=>{win.focus();win.print();};}
 
 init();
+</script>
+<script>
+(function(){
+ var MOON='<svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="vertical-align:-2px"><path d="M13 8.5A5.5 5.5 0 116 2c-.5 2 0 5 2.5 6.5S13 9 13 8.5z" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>';
+ var SUN='<svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="vertical-align:-2px"><circle cx="8" cy="8" r="3.3" stroke="currentColor" stroke-width="1.4"/><path d="M8 1.5v1.8M8 12.7v1.8M1.5 8h1.8M12.7 8h1.8M3.5 3.5l1.3 1.3M11.2 11.2l1.3 1.3M3.5 12.5l1.3-1.3M11.2 4.8l1.3-1.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
+ function paint(){var d=document.documentElement.getAttribute('data-theme')==='dark';document.querySelectorAll('[data-theme-toggle]').forEach(function(b){b.innerHTML=d?(SUN+' Light'):(MOON+' Dark');});}
+ window.toggleTheme=function(){var c=document.documentElement.getAttribute('data-theme')||'light';var n=c==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);try{localStorage.setItem('ytrak-theme',n);}catch(e){}paint();};
+ if(window.matchMedia){try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(e){try{if(!localStorage.getItem('ytrak-theme'))document.documentElement.setAttribute('data-theme',e.matches?'dark':'light');}catch(x){}paint();});}catch(e){}}
+ paint();
+})();
 </script>
 </body>
 </html>
