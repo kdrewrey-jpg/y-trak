@@ -88,6 +88,14 @@
   /* Identity verification modal */
   .verify-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
   .verify-overlay.open { display: flex; }
+  .maint-overlay { display: none; position: fixed; inset: 0; z-index: 1000; align-items: center; justify-content: center; padding: 20px; background: var(--bg, #f4f4f4); }
+  .maint-overlay.open { display: flex; }
+  .maint-box { background: var(--card, #fff); color: var(--text, #111); border: 1px solid var(--border, #ddd); border-radius: 14px; padding: 34px 28px; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.12); }
+  .maint-icon { font-size: 40px; line-height: 1; margin-bottom: 10px; }
+  .maint-title { font-size: 20px; font-weight: bold; margin: 0 0 10px; }
+  .maint-msg { font-size: 14px; line-height: 1.5; margin: 0 0 8px; }
+  .maint-sub { font-size: 12px; opacity: 0.7; margin: 0 0 18px; }
+  .maint-btn { padding: 11px 22px; font-size: 14px; font-weight: bold; background: #1a5dc8; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-family: Arial, sans-serif; }
   .verify-box { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 28px 26px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
   .verify-q { font-size: 12px; font-weight: bold; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 14px; }
   .verify-name { font-size: 24px; font-weight: 800; color: var(--heading); margin: 0 0 6px; line-height: 1.2; }
@@ -320,6 +328,17 @@
 </div>
 
 <!-- Identity verification modal -->
+<!-- Maintenance notice (shown when Administrator turns maintenance mode on) -->
+<div class="maint-overlay" id="maint-overlay" role="alert">
+  <div class="maint-box">
+    <div class="maint-icon">🛠️</div>
+    <p class="maint-title">System Down for Maintenance</p>
+    <p class="maint-msg" id="maint-msg">Y-TRAK is temporarily unavailable while updates are made. Please check back shortly.</p>
+    <p class="maint-sub">Anything already entered on this screen is kept. This page checks automatically and will reopen when the system is back.</p>
+    <button class="maint-btn" onclick="checkMaintenance()">Check again</button>
+  </div>
+</div>
+
 <div class="verify-overlay" id="verify-overlay">
   <div class="verify-box">
     <p class="verify-q">Please verify your identity</p>
@@ -541,6 +560,26 @@ async function loadDueBanner() {
     }
   } catch(e) {}
 }
+
+/* ── Maintenance mode ── */
+const DEFAULT_MAINT_MSG = 'Y-TRAK is temporarily unavailable while updates are made. Please check back shortly.';
+let maintOn = false;
+function applyMaintenance(on, msg) {
+  maintOn = !!on;
+  document.getElementById('maint-msg').textContent = msg || DEFAULT_MAINT_MSG;
+  document.getElementById('maint-overlay').classList.toggle('open', maintOn);
+}
+/* Returns true if maintenance is on. If the check itself fails, don't lock employees out. */
+async function checkMaintenance() {
+  try {
+    const { data, error } = await sb.from('settings').select('maintenance_mode, maintenance_message').eq('id', 'global').single();
+    if (error || !data) return maintOn;
+    applyMaintenance(data.maintenance_mode === true, data.maintenance_message);
+  } catch (e) {}
+  return maintOn;
+}
+checkMaintenance();
+setInterval(checkMaintenance, 60000);
 
 /* ── PIN ── */
 function checkPin() {
@@ -1139,6 +1178,7 @@ function showStatus(ok, msg) {
 
 /* ── Save Draft: writes/updates a row with status 'draft' (supervisor never sees it) ── */
 async function saveDraft() {
+  if(await checkMaintenance()) return;
   if(viewOnly){ showStatus(false,'Timesheet approved, contact '+(approverName||'the approving official')+'. This timesheet is approved and read-only — it can’t be changed here.'); return; }
   if(!validateForSave())return;
   const rc=validateRows();
@@ -1213,6 +1253,7 @@ async function deleteDraft() {
 
 /* ── Submit ── */
 async function submitTimesheet() {
+  if(await checkMaintenance()) return;
   if(viewOnly){ showStatus(false,'Timesheet approved, contact '+(approverName||'the approving official')+'. This timesheet is approved and read-only — it can’t be changed here.'); return; }
   if(!validateForm())return;
   const rc=validateRows();

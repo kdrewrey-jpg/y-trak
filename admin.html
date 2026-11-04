@@ -46,6 +46,20 @@
   .status { display: none; padding: 10px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 14px; line-height: 1.5; }
   .loading, .empty { text-align: center; padding: 26px; color: #6b7280; font-size: 13px; }
   .note { font-size: 11px; color: #9ca3af; }
+  .maint-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .switch { position: relative; width: 52px; height: 30px; flex: 0 0 52px; }
+  .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .slider { position: absolute; inset: 0; background: #b8c0cc; border-radius: 30px; cursor: pointer; transition: background 0.15s; }
+  .slider::before { content: ''; position: absolute; width: 24px; height: 24px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .switch input:checked + .slider { background: #c0392b; }
+  .switch input:checked + .slider::before { transform: translateX(22px); }
+  .switch input:disabled + .slider { opacity: 0.55; cursor: default; }
+  .maint-state { font-size: 14px; font-weight: bold; }
+  .maint-state.on { color: #c0392b; }
+  .maint-state.off { color: #1a7a3a; }
+  .maint-msg-row { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .maint-msg-row .fld { flex: 1 1 280px; }
+  .maint-msg-row .fld input { width: 100%; }
 </style>
 </head>
 <body>
@@ -96,6 +110,25 @@
       </tbody>
     </table>
     <div class="count" id="emp-count"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#c0392b" stroke-width="1.3" fill="none"/><path d="M8 4.5V8.5M8 10.6v.4" stroke="#c0392b" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Maintenance mode
+    </div>
+    <p class="card-sub">Turn this on while you are making updates. Employees will see a &ldquo;System Down for Maintenance&rdquo; screen and can&rsquo;t open, save, or submit timesheets. Supervisor, Payroll, and Administrator views are not affected.</p>
+    <div class="maint-row">
+      <label class="switch"><input type="checkbox" id="maint-toggle" onchange="toggleMaintenance(this)" disabled><span class="slider"></span></label>
+      <span class="maint-state off" id="maint-state">Loading…</span>
+    </div>
+    <div class="maint-msg-row">
+      <div class="fld">
+        <label>Message shown to employees (optional)</label>
+        <input type="text" id="maint-message" maxlength="200" placeholder="Back at 5:00 PM. Thank you for your patience." autocomplete="off">
+      </div>
+      <button class="btn btn-light" id="maint-save" onclick="saveMaintMessage()">Save message</button>
+    </div>
   </div>
 
   <div class="card">
@@ -207,7 +240,53 @@ function signOut() {
   window.location.href = '/supervisor.html';
 }
 
+const SETTINGS_REST = 'https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/settings?id=eq.global';
+
+function paintMaint(on) {
+  const t = document.getElementById('maint-toggle');
+  t.checked = on; t.disabled = false;
+  const st = document.getElementById('maint-state');
+  st.textContent = on ? 'ON — employees are locked out' : 'OFF — system is open to employees';
+  st.className = 'maint-state ' + (on ? 'on' : 'off');
+}
+async function loadMaintenance() {
+  try {
+    const { data, error } = await sb.from('settings').select('maintenance_mode, maintenance_message').eq('id', 'global').single();
+    if (error) throw error;
+    paintMaint(data.maintenance_mode === true);
+    document.getElementById('maint-message').value = data.maintenance_message || '';
+  } catch (err) { showStatus(false, '✗ Could not load maintenance setting: ' + err.message); }
+}
+async function patchSettings(body) {
+  const res = await fetch(SETTINGS_REST, { method: 'PATCH', headers: Object.assign({}, svcHeaders, { 'Prefer': 'return=minimal' }), body: JSON.stringify(body) });
+  if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + (await res.text()));
+}
+async function toggleMaintenance(box) {
+  const want = box.checked;
+  box.disabled = true;
+  try {
+    const msg = document.getElementById('maint-message').value.trim();
+    await patchSettings({ maintenance_mode: want, maintenance_message: msg || null });
+    paintMaint(want);
+    showStatus(true, want ? '✓ Maintenance mode is ON. Employees now see the maintenance screen.' : '✓ Maintenance mode is OFF. Employees can use the system again.');
+  } catch (err) {
+    box.checked = !want; box.disabled = false;
+    showStatus(false, '✗ Could not change maintenance mode: ' + err.message);
+  }
+}
+async function saveMaintMessage() {
+  const btn = document.getElementById('maint-save');
+  btn.disabled = true;
+  try {
+    const msg = document.getElementById('maint-message').value.trim();
+    await patchSettings({ maintenance_message: msg || null });
+    showStatus(true, '✓ Message saved.');
+  } catch (err) { showStatus(false, '✗ Could not save message: ' + err.message); }
+  btn.disabled = false;
+}
+
 loadEmployees();
+loadMaintenance();
 </script>
 </body>
 </html>
