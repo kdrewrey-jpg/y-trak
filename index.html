@@ -1295,7 +1295,9 @@ async function submitTimesheet() {
 }
 
 /* ── PDF ── */
-function buildPDF(data) {
+/* Fit a signature image inside a box WITHOUT distorting it (preserves aspect ratio). */
+function getSigDimensions(src,maxW,maxH){return new Promise(resolve=>{const img=new Image();img.onload=()=>{const ratio=img.naturalHeight/img.naturalWidth;let w=Math.min(img.naturalWidth,maxW),h=w*ratio;if(h>maxH){h=maxH;w=h/ratio;}resolve({w,h});};img.onerror=()=>resolve({w:maxW*0.6,h:maxH*0.6});img.src=src;});}
+async function buildPDF(data) {
   const{jsPDF}=window.jspdf;const doc=new jsPDF({orientation:'portrait',unit:'pt',format:'letter'});const ml=36,mr=576,pw=mr-ml;let y=36;
   doc.setFont('helvetica','bold');doc.setFontSize(14.5);doc.text("Yalobusha County Sheriff's Department",ml,y);y+=17;
   doc.setFont('helvetica','normal');doc.setFontSize(9.5);doc.text('Time and Attendance',ml,y);y+=21;
@@ -1313,11 +1315,11 @@ function buildPDF(data) {
   y+=rowH+20;
   const sigW=(pw-32)/2,sigH=44;
   doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.text('Employee Signature:',ml,y);y+=6;
-  if(data.empSrc&&data.empSrc.startsWith('data:image')){try{doc.addImage(data.empSrc,'PNG',ml,y,sigW,sigH-8);}catch(e){}}
+  if(data.empSrc&&data.empSrc.startsWith('data:image')){try{const dims=await getSigDimensions(data.empSrc,sigW-8,sigH-8);doc.addImage(data.empSrc,'PNG',ml+4,y+(sigH-dims.h)/2,dims.w,dims.h);}catch(e){}}
   doc.line(ml,y+sigH,ml+sigW,y+sigH);
   return doc;
 }
-function downloadPDF(){if(!validateForm())return;const data=getFormData();buildPDF(data).save(`${(data.name||'Name').replace(/\s+/g,'_')}_${data.month||'Month'}_${data.year||'Year'}_Timesheet.pdf`);}
+async function downloadPDF(){if(!validateForm())return;const data=getFormData();const doc=await buildPDF(data);doc.save(`${(data.name||'Name').replace(/\s+/g,'_')}_${data.month||'Month'}_${data.year||'Year'}_Timesheet.pdf`);}
 
 ['f-name','f-ssn','f-status','f-month','f-year'].forEach(id=>{
   const el=document.getElementById(id);
