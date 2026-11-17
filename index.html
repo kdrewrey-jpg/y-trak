@@ -1572,6 +1572,22 @@ function cancelEditLeave() {
   resetLeaveForm();
 }
 
+/* Delete a leave request the employee hasn't had approved or denied yet (pending or returned). */
+async function deleteLeaveRequest(id) {
+  const r = myLeaveRequests.find(x => String(x.id) === String(id));
+  if (!r) return;
+  if (!confirm(`Delete this ${r.leave_type} leave request (${fmtLeaveDates(r.lines)})? This cannot be undone.`)) return;
+  try {
+    const res = await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/leave_requests?id=eq.${id}`, { method: 'DELETE', headers: { 'apikey': SERVICE_KEY, 'Authorization': 'Bearer ' + SERVICE_KEY } });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    if (editingLeaveId && String(editingLeaveId) === String(id)) resetLeaveForm();
+    showLeaveStatus(true, '✓ Leave request deleted.');
+    loadMyLeaveRequests();
+  } catch (err) {
+    showLeaveStatus(false, '✗ Could not delete: ' + err.message);
+  }
+}
+
 function showLeaveStatus(ok, msg) {
   const el = document.getElementById('lv-submit-status');
   el.style.cssText = 'display:block;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:12px;line-height:1.6;'
@@ -1648,12 +1664,14 @@ async function loadMyLeaveRequests() {
       let note = '';
       if (status === 'denied' && r.decision_note) note = `<div class="lr-note">Reason: ${esc(r.decision_note)}</div>`;
       else if (status === 'returned' && r.decision_note) note = `<div class="lr-note">Note: ${esc(r.decision_note)}</div>`;
-      const editBtn = status === 'returned' ? `<button class="back-link" style="margin:6px 0 0;" onclick="editLeaveRequest('${r.id}')">Edit &amp; resubmit</button>` : '';
+      const canDelete = status === 'pending' || status === 'returned';
+      const editBtn = status === 'returned' ? `<button class="back-link" style="margin:6px 14px 0 0;" onclick="editLeaveRequest('${r.id}')">Edit &amp; resubmit</button>` : '';
+      const delBtn = canDelete ? `<button class="back-link" style="margin:6px 0 0;color:#c0392b;" onclick="deleteLeaveRequest('${r.id}')">Delete</button>` : '';
       return `<div class="lr-item">
         <div class="lr-item-top"><span class="lr-type">${esc(r.leave_type)}</span><span class="lr-badge ${status}">${esc(label)}</span></div>
         <div class="lr-detail">${esc(fmtLeaveDates(r.lines))} &nbsp;&middot;&nbsp; ${esc(String(r.total_hours))} total hours</div>
         ${note}
-        ${editBtn}
+        <div>${editBtn}${delBtn}</div>
       </div>`;
     }).join('');
   } catch (err) {
