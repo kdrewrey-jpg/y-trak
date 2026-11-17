@@ -107,6 +107,38 @@
   .settings-btn:hover { background: #14305a; }
   .settings-saved { font-size: 12px; color: #10b981; margin-left: 8px; display: none; }
   .settings-current { font-size: 12px; margin-top: 10px; }
+
+  /* Leave requests */
+  .badge-denied { background: rgba(239,68,68,0.12); color: #ef4444; border: 0.5px solid rgba(239,68,68,0.25); }
+  .lv-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .lv-btn { font-size: 10px; font-weight: bold; padding: 4px 9px; border-radius: 6px; cursor: pointer; font-family: Arial, sans-serif; border: 1px solid transparent; white-space: nowrap; }
+  .lv-btn.appr { background: rgba(16,185,129,0.15); color: #10b981; border-color: rgba(16,185,129,0.3); }
+  .lv-btn.appr:hover { background: rgba(16,185,129,0.28); }
+  .lv-btn.deny { background: rgba(239,68,68,0.12); color: #ef4444; border-color: rgba(239,68,68,0.25); }
+  .lv-btn.deny:hover { background: rgba(239,68,68,0.25); }
+  .lv-btn.ret  { background: rgba(245,158,11,0.15); color: #d97706; border-color: rgba(245,158,11,0.3); }
+  .lv-btn.ret:hover { background: rgba(245,158,11,0.28); }
+  .lv-decided { font-size: 11px; }
+  .lv-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; align-items: center; justify-content: center; padding: 20px; }
+  .lv-overlay.open { display: flex; }
+  .lv-modal-box { border-radius: 14px; padding: 26px 24px; width: 100%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+  body.light .lv-modal-box { background: #fff; color: #111827; }
+  body.dark  .lv-modal-box { background: #1a1d23; color: #e8eaf0; }
+  .lv-modal-title { font-size: 15px; font-weight: bold; margin: 0 0 4px; }
+  .lv-modal-sub { font-size: 12px; margin: 0 0 16px; }
+  .lv-modal-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+  .lv-modal-field label { font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.04em; }
+  .lv-modal-field input, .lv-modal-field textarea { font-size: 14px; padding: 9px 11px; border-radius: 8px; font-family: Arial, sans-serif; outline: none; resize: vertical; }
+  body.light .lv-modal-field input, body.light .lv-modal-field textarea { background: #f7f8fa; border: 1.5px solid #e0e3e8; color: #111; }
+  body.dark  .lv-modal-field input, body.dark  .lv-modal-field textarea { background: #22262e; border: 1.5px solid rgba(255,255,255,0.14); color: #e8eaf0; }
+  .lv-modal-actions { display: flex; gap: 10px; margin-top: 4px; }
+  .lv-modal-btn { flex: 1; padding: 11px; font-size: 14px; font-weight: bold; border-radius: 9px; cursor: pointer; font-family: Arial, sans-serif; border: none; }
+  .lv-modal-btn.cancel { background: transparent; border: 1.5px solid #c0cce0; }
+  body.dark .lv-modal-btn.cancel { border-color: rgba(255,255,255,0.2); color: #e8eaf0; }
+  .lv-modal-btn.confirm.appr { background: #10b981; color: #fff; }
+  .lv-modal-btn.confirm.deny { background: #ef4444; color: #fff; }
+  .lv-modal-btn.confirm.ret  { background: #d97706; color: #fff; }
+  .lv-modal-error { font-size: 12px; color: #ef4444; margin: -6px 0 10px; display: none; }
 </style>
 </head>
 <body class="light">
@@ -237,6 +269,72 @@
     </div>
 
   </div>
+
+  <div class="card">
+    <div class="inner-top">
+      <div>
+        <div class="page-title">Leave Requests</div>
+        <div class="page-sub text2">Approve, deny, or return requests submitted by employees</div>
+      </div>
+      <div class="top-right">
+        <div class="filter-grp"><label class="text2">Status</label>
+          <select id="lv-status-filter" onchange="applyLeaveFilter()">
+            <option value="pending" selected>Pending</option>
+            <option value="">All</option>
+            <option value="approved">Approved</option>
+            <option value="denied">Denied</option>
+            <option value="returned">Returned</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="#f59e0b" stroke-width="1.3"/><path d="M5 1.5v3M11 1.5v3M2 6.5h12" stroke="#f59e0b" stroke-width="1.3" stroke-linecap="round"/></svg>
+      Leave Requests
+      <span class="section-badge badge-pending-count" id="lv-pending-count">0</span>
+    </div>
+    <div class="tbl-outer">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:85px;">Status</th>
+            <th style="min-width:140px;">Employee name</th>
+            <th style="width:55px;">SSN</th>
+            <th style="min-width:110px;">Leave type</th>
+            <th style="min-width:160px;">Dates</th>
+            <th style="width:65px;">Hours</th>
+            <th style="width:90px;">Submitted</th>
+            <th style="width:200px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="leave-body">
+          <tr><td colspan="8" class="loading text2">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Leave decision modal -->
+<div class="lv-overlay" id="lv-overlay">
+  <div class="lv-modal-box">
+    <p class="lv-modal-title" id="lv-modal-title">Approve leave request</p>
+    <p class="lv-modal-sub text2" id="lv-modal-sub"></p>
+    <div class="lv-modal-field">
+      <label>Your name</label>
+      <input type="text" id="lv-reviewer-name" placeholder="Full name" autocomplete="off">
+    </div>
+    <div class="lv-modal-field">
+      <label id="lv-note-label">Note (optional)</label>
+      <textarea id="lv-note" rows="3" placeholder=""></textarea>
+    </div>
+    <div class="lv-modal-error" id="lv-modal-error"></div>
+    <div class="lv-modal-actions">
+      <button class="lv-modal-btn cancel" onclick="closeLeaveModal()">Cancel</button>
+      <button class="lv-modal-btn confirm" id="lv-modal-confirm" onclick="confirmLeaveDecision()">Confirm</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -308,6 +406,7 @@ async function init() {
   await loadRoster();
   await loadSettings();
   await loadSheets();
+  await loadLeaveRequests();
 }
 
 async function loadSheets() {
@@ -412,6 +511,126 @@ function renderTables() {
 }
 
 function openSheet(id) { window.location.href = `/review.html?id=${id}`; }
+
+/* ── Leave requests ── */
+let leaveRequests = [], leaveFiltered = [];
+let pendingLeaveAction = null; // { id, action }
+
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function loadLeaveRequests() {
+  const { data, error } = await sb.from('leave_requests').select('*').order('submitted_at', { ascending: false });
+  if (error) {
+    document.getElementById('leave-body').innerHTML = '<tr><td colspan="8" class="empty text2">Error loading leave requests.</td></tr>';
+    return;
+  }
+  leaveRequests = data || [];
+  applyLeaveFilter();
+}
+
+function applyLeaveFilter() {
+  const f = document.getElementById('lv-status-filter').value;
+  leaveFiltered = f ? leaveRequests.filter(r => (r.status || 'pending') === f) : leaveRequests;
+  renderLeaveTable();
+}
+
+function lvBadge(status) {
+  if (status === 'approved') return '<span class="badge badge-appr">Approved</span>';
+  if (status === 'denied')   return '<span class="badge badge-denied">Denied</span>';
+  if (status === 'returned') return '<span class="badge badge-ret">Returned</span>';
+  return '<span class="badge badge-pend">Pending</span>';
+}
+
+function fmtLvDates(lines) {
+  if (!Array.isArray(lines) || lines.length === 0) return '—';
+  const fmt = iso => { const p = String(iso).split('-'); return p.length === 3 ? `${p[1]}/${p[2]}/${p[0].slice(2)}` : iso; };
+  if (lines.length <= 3) return lines.map(l => `${fmt(l.date)} (${parseFloat(l.hours).toFixed(2)}h)`).join(', ');
+  return `${fmt(lines[0].date)} – ${fmt(lines[lines.length-1].date)} (${lines.length} days)`;
+}
+
+function renderLeaveTable() {
+  const body = document.getElementById('leave-body');
+  document.getElementById('lv-pending-count').textContent = leaveRequests.filter(r => (r.status || 'pending') === 'pending').length;
+  if (leaveFiltered.length === 0) {
+    body.innerHTML = '<tr><td colspan="8" class="empty text2">No leave requests for this filter.</td></tr>';
+    return;
+  }
+  body.innerHTML = leaveFiltered.map(r => {
+    const status = r.status || 'pending';
+    const date = r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : '—';
+    let actions;
+    if (status === 'pending') {
+      actions = `<div class="lv-actions">
+        <button class="lv-btn appr" onclick="openLeaveModal('${r.id}','approve')">Approve</button>
+        <button class="lv-btn deny" onclick="openLeaveModal('${r.id}','deny')">Deny</button>
+        <button class="lv-btn ret" onclick="openLeaveModal('${r.id}','return')">Return</button>
+      </div>`;
+    } else {
+      const who = r.reviewed_by_name ? esc(r.reviewed_by_name) : '';
+      actions = `<span class="lv-decided text2">${who ? 'By ' + who : ''}${r.decision_note ? (who ? ' — ' : '') + esc(r.decision_note) : ''}</span>`;
+    }
+    return `<tr>
+      <td>${lvBadge(status)}</td>
+      <td>${esc(r.employee_name)}</td>
+      <td class="text2">${esc(r.ssn_last4)}</td>
+      <td>${esc(r.leave_type)}</td>
+      <td class="text2">${fmtLvDates(r.lines)}</td>
+      <td>${r.total_hours || '—'}</td>
+      <td class="text2">${date}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+function openLeaveModal(id, action) {
+  pendingLeaveAction = { id, action };
+  document.getElementById('lv-reviewer-name').value = '';
+  document.getElementById('lv-note').value = '';
+  document.getElementById('lv-modal-error').style.display = 'none';
+  const titleMap = { approve: 'Approve leave request', deny: 'Deny leave request', return: 'Return leave request' };
+  const subMap = { approve: 'This will mark the request approved.', deny: 'This will mark the request denied.', return: 'This sends it back with a note — the employee can submit a new request.' };
+  const noteLabelMap = { approve: 'Note (optional)', deny: 'Reason for denial (required)', return: 'Note for employee (required)' };
+  document.getElementById('lv-modal-title').textContent = titleMap[action];
+  document.getElementById('lv-modal-sub').textContent = subMap[action];
+  document.getElementById('lv-note-label').textContent = noteLabelMap[action];
+  const confirmBtn = document.getElementById('lv-modal-confirm');
+  confirmBtn.className = 'lv-modal-btn confirm ' + (action === 'approve' ? 'appr' : action === 'deny' ? 'deny' : 'ret');
+  confirmBtn.textContent = action === 'approve' ? 'Approve' : action === 'deny' ? 'Deny' : 'Return';
+  document.getElementById('lv-overlay').classList.add('open');
+}
+function closeLeaveModal() {
+  document.getElementById('lv-overlay').classList.remove('open');
+  pendingLeaveAction = null;
+}
+
+async function confirmLeaveDecision() {
+  if (!pendingLeaveAction) return;
+  const { id, action } = pendingLeaveAction;
+  const name = document.getElementById('lv-reviewer-name').value.trim();
+  const note = document.getElementById('lv-note').value.trim();
+  const errEl = document.getElementById('lv-modal-error');
+  if (!name) { errEl.textContent = 'Please enter your name.'; errEl.style.display = 'block'; return; }
+  if ((action === 'deny' || action === 'return') && !note) { errEl.textContent = 'Please enter a note for the employee.'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+  const statusMap = { approve: 'approved', deny: 'denied', return: 'returned' };
+  const btn = document.getElementById('lv-modal-confirm');
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res = await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/leave_requests?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'apikey': SERVICE_KEY, 'Authorization': 'Bearer ' + SERVICE_KEY, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ status: statusMap[action], reviewed_by_name: name, reviewed_at: new Date().toISOString(), decision_note: note || null })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    closeLeaveModal();
+    await loadLeaveRequests();
+  } catch (err) {
+    errEl.textContent = 'Could not save: ' + err.message;
+    errEl.style.display = 'block';
+  }
+  btn.disabled = false; btn.textContent = original;
+}
 function switchView() { sessionStorage.removeItem('ytrak-staff'); sessionStorage.removeItem('ytrak-admin'); window.location.href = '/supervisor.html'; }
 function signOut() { ['ytrak-staff','ytrak-access','ytrak-admin','ytrak-views'].forEach(k => sessionStorage.removeItem(k)); window.location.href = '/supervisor.html'; }
 if (viewsAllowed().length < 2) document.getElementById('switch-wrap').style.display = 'none';
