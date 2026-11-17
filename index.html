@@ -568,6 +568,10 @@
     </div>
     <div class="submit-status" id="lv-submit-status"></div>
     <div class="val-banner" id="lv-val-banner"></div>
+    <div id="lv-editing-banner" class="recalled-banner" style="display:none;">
+      <strong>&#9998; Editing a returned request</strong> — Make your changes and resubmit. This will replace the returned request.
+      <button class="back-link" style="margin:6px 0 0;display:inline-flex;" onclick="cancelEditLeave()">Cancel and start a new request instead</button>
+    </div>
 
     <div class="fields-grid" style="margin-bottom:16px;">
       <div class="field" id="lv-field-type">
@@ -666,6 +670,8 @@ let prevMonth = '', prevYear = '';   // remembered top Month/Year, for the chang
 let currentName = '', currentSsn = '';  // identified employee, set once at login, used by both Timesheet and Leave
 let leaveSigData = null;
 let leaveTypesList = [];
+let myLeaveRequests = [];   // the employee's own leave requests, loaded for the "My Requests" list
+let editingLeaveId = null;  // set when resubmitting an edited "returned" leave request
 
 /* ── Year dropdown: current year + next two, rebuilt from today's date so it
       rolls forward automatically each January with no code change ── */
@@ -1529,6 +1535,8 @@ function recalcLeaveTotal() {
 }
 
 function resetLeaveForm() {
+  editingLeaveId = null;
+  document.getElementById('lv-editing-banner').style.display = 'none';
   document.getElementById('lv-type').selectedIndex = 0;
   document.getElementById('lv-reason').value = '';
   document.getElementById('lv-body').innerHTML = '';
@@ -1537,6 +1545,31 @@ function resetLeaveForm() {
   document.getElementById('lv-submit-status').style.display = 'none';
   clearLeaveDraw(); clearLeaveUpload(); leaveSigData = null;
   setLeaveSigMode('draw');
+  const btn = document.getElementById('lv-submit-btn');
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Submit leave request';
+}
+
+/* "Edit & Resubmit" on a returned leave request — load it back into the form */
+function editLeaveRequest(id) {
+  const r = myLeaveRequests.find(x => String(x.id) === String(id));
+  if (!r) return;
+  resetLeaveForm();
+  editingLeaveId = id;
+  document.getElementById('lv-editing-banner').style.display = 'block';
+  const sel = document.getElementById('lv-type');
+  for (let i = 0; i < sel.options.length; i++) { if (sel.options[i].value === r.leave_type) { sel.selectedIndex = i; break; } }
+  document.getElementById('lv-reason').value = r.reason || '';
+  document.getElementById('lv-body').innerHTML = '';
+  const lines = Array.isArray(r.lines) ? r.lines : [];
+  if (lines.length === 0) addLeaveLine();
+  else lines.forEach(l => addLeaveLine(l.date, l.hours));
+  recalcLeaveTotal();
+  const btn = document.getElementById('lv-submit-btn');
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Resubmit leave request';
+  document.querySelector('#leave-screen .ts-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function cancelEditLeave() {
+  resetLeaveForm();
 }
 
 function showLeaveStatus(ok, msg) {
@@ -1576,10 +1609,16 @@ async function submitLeaveRequest() {
   btn.disabled = true; btn.innerHTML = 'Submitting&hellip;';
   document.getElementById('lv-submit-status').style.display = 'none';
   try {
+    // On a resubmit, create the replacement first and only remove the old returned
+    // record once that succeeds — same safeguard used for timesheet resubmission.
+    const oldId = editingLeaveId;
     const res = await fetch('/.netlify/functions/submit-leave-request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const json = await res.json();
     if (json.success) {
-      showLeaveStatus(true, '✓ Leave request submitted. Your supervisor will review it shortly.');
+      if (oldId) {
+        try { await fetch(`https://kwgfonwgeoievgxwvxlg.supabase.co/rest/v1/leave_requests?id=eq.${oldId}`, { method: 'DELETE', headers: { 'apikey': SERVICE_KEY, 'Authorization': 'Bearer ' + SERVICE_KEY } }); } catch (e) {}
+      }
+      showLeaveStatus(true, oldId ? '✓ Leave request resubmitted. Your supervisor will review it shortly.' : '✓ Leave request submitted. Your supervisor will review it shortly.');
       resetLeaveForm();
       loadMyLeaveRequests();
     } else { throw new Error(json.error || 'Unknown error'); }
@@ -1601,17 +1640,20 @@ async function loadMyLeaveRequests() {
   try {
     const { data, error } = await sb.from('leave_requests').select('*').eq('ssn_last4', currentSsn).order('submitted_at', { ascending: false }).limit(20);
     if (error) throw error;
-    if (!data || data.length === 0) { el.innerHTML = '<p class="lr-detail">No leave requests yet.</p>'; return; }
-    el.innerHTML = data.map(r => {
+    myLeaveRequests = data || [];
+    if (myLeaveRequests.length === 0) { el.innerHTML = '<p class="lr-detail">No leave requests yet.</p>'; return; }
+    el.innerHTML = myLeaveRequests.map(r => {
       const status = (r.status || 'pending').toLowerCase();
       const label = status.charAt(0).toUpperCase() + status.slice(1);
       let note = '';
       if (status === 'denied' && r.decision_note) note = `<div class="lr-note">Reason: ${esc(r.decision_note)}</div>`;
       else if (status === 'returned' && r.decision_note) note = `<div class="lr-note">Note: ${esc(r.decision_note)}</div>`;
+      const editBtn = status === 'returned' ? `<button class="back-link" style="margin:6px 0 0;" onclick="editLeaveRequest('${r.id}')">Edit &amp; resubmit</button>` : '';
       return `<div class="lr-item">
         <div class="lr-item-top"><span class="lr-type">${esc(r.leave_type)}</span><span class="lr-badge ${status}">${esc(label)}</span></div>
         <div class="lr-detail">${esc(fmtLeaveDates(r.lines))} &nbsp;&middot;&nbsp; ${esc(String(r.total_hours))} total hours</div>
         ${note}
+        ${editBtn}
       </div>`;
     }).join('');
   } catch (err) {
