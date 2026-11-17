@@ -155,6 +155,35 @@
   </div>
 
   <div class="card">
+    <div class="card-title">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2.5" width="12" height="11" rx="1.5" stroke="#1a3a6b" stroke-width="1.3"/><path d="M5 6h6M5 8.5h6M5 11h3.5" stroke="#1a3a6b" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Leave types
+    </div>
+    <p class="card-sub">The leave types employees can choose from when requesting leave. Changes take effect immediately — no deploy needed.</p>
+
+    <div class="add-row">
+      <div class="fld">
+        <label>New leave type</label>
+        <input type="text" id="new-leave-type" placeholder="e.g. Administrative Leave" autocomplete="off" style="width:260px;">
+      </div>
+      <button class="btn btn-green" id="add-leave-type-btn" onclick="addLeaveType()">+ Add type</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Leave type</th>
+          <th style="width:160px;"></th>
+        </tr>
+      </thead>
+      <tbody id="leave-type-body">
+        <tr><td colspan="2" class="loading">Loading leave types…</td></tr>
+      </tbody>
+    </table>
+    <div class="count" id="leave-type-count"></div>
+  </div>
+
+  <div class="card">
     <div class="card-title">More controls can be added here</div>
     <p class="card-sub" style="margin:0;">Additional settings can be managed from this view later if needed, such as the pay-period due date. For now, this view manages the employee roster.</p>
   </div>
@@ -308,8 +337,86 @@ async function saveMaintMessage() {
   btn.disabled = false;
 }
 
+let leaveTypes = [];
+
+function renderLeaveTypes() {
+  const body = document.getElementById('leave-type-body');
+  if (leaveTypes.length === 0) {
+    body.innerHTML = '<tr><td colspan="2" class="empty">No leave types yet. Add one above.</td></tr>';
+  } else {
+    body.innerHTML = leaveTypes.map((t, i) => `
+      <tr data-i="${i}">
+        <td><input class="cell-input lt-name" value="${esc(t)}"></td>
+        <td class="row-actions">
+          <button class="link-btn link-save" onclick="saveLeaveType(${i}, this)">Save</button>
+          <button class="link-btn link-del" onclick="deleteLeaveType(${i}, this)">Delete</button>
+        </td>
+      </tr>`).join('');
+  }
+  document.getElementById('leave-type-count').textContent = leaveTypes.length + ' leave type' + (leaveTypes.length === 1 ? '' : 's');
+}
+
+async function loadLeaveTypes() {
+  try {
+    const { data, error } = await sb.from('settings').select('leave_types').eq('id', 'global').single();
+    if (error) throw error;
+    leaveTypes = Array.isArray(data.leave_types) ? data.leave_types : [];
+    renderLeaveTypes();
+  } catch (err) {
+    document.getElementById('leave-type-body').innerHTML = '<tr><td colspan="2" class="empty">Error loading leave types.</td></tr>';
+  }
+}
+
+async function saveLeaveTypesList(list) {
+  await patchSettings({ leave_types: list });
+  leaveTypes = list;
+  renderLeaveTypes();
+}
+
+async function addLeaveType() {
+  const input = document.getElementById('new-leave-type');
+  const name = input.value.trim();
+  if (!name) { showStatus(false, 'Please enter a leave type name.'); return; }
+  if (leaveTypes.some(t => t.toLowerCase() === name.toLowerCase())) { showStatus(false, 'That leave type already exists.'); return; }
+  const btn = document.getElementById('add-leave-type-btn');
+  btn.disabled = true; btn.textContent = 'Adding…';
+  try {
+    await saveLeaveTypesList([...leaveTypes, name]);
+    input.value = '';
+    showStatus(true, '✓ Added "' + name + '".');
+  } catch (err) { showStatus(false, '✗ Could not add: ' + err.message); }
+  btn.disabled = false; btn.textContent = '+ Add type';
+}
+
+async function saveLeaveType(i, btn) {
+  const tr = btn.closest('tr');
+  const name = tr.querySelector('.lt-name').value.trim();
+  if (!name) { showStatus(false, 'Leave type name cannot be empty.'); return; }
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const next = leaveTypes.slice();
+    next[i] = name;
+    await saveLeaveTypesList(next);
+    showStatus(true, '✓ Saved.');
+  } catch (err) { showStatus(false, '✗ Could not save: ' + err.message); }
+  btn.disabled = false; btn.textContent = 'Save';
+}
+
+async function deleteLeaveType(i, btn) {
+  const name = leaveTypes[i];
+  if (!confirm('Remove "' + name + '" from the leave type list? Existing leave requests using this type are not affected.')) return;
+  btn.disabled = true; btn.textContent = 'Deleting…';
+  try {
+    const next = leaveTypes.slice();
+    next.splice(i, 1);
+    await saveLeaveTypesList(next);
+    showStatus(true, '✓ Removed "' + name + '".');
+  } catch (err) { showStatus(false, '✗ Could not delete: ' + err.message); btn.disabled = false; btn.textContent = 'Delete'; }
+}
+
 loadEmployees();
 loadMaintenance();
+loadLeaveTypes();
 </script>
 <script>
 (function(){

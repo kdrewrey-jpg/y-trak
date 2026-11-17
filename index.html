@@ -116,6 +116,42 @@
   .recall-box-title { font-size: 12px; font-weight: bold; color: var(--heading); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 12px; }
   .recall-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
+  /* Landing chooser */
+  .landing-screen { display: none; align-items: center; justify-content: center; min-height: 100vh; margin: -16px; background: var(--bg); padding: 20px; }
+  .landing-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 36px 32px; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 4px 24px var(--shadow); }
+  .landing-title { font-size: 18px; font-weight: 800; color: var(--heading); margin: 0 0 4px; }
+  .landing-sub { font-size: 13px; color: var(--muted); margin: 0 0 22px; }
+  .landing-choices { display: flex; flex-direction: column; gap: 12px; }
+  .landing-choice { display: flex; align-items: center; gap: 12px; width: 100%; padding: 16px 18px; font-size: 15px; font-weight: bold; border-radius: 12px; cursor: pointer; font-family: Arial, sans-serif; border: 1.5px solid var(--border-accent); background: var(--input-bg); color: var(--heading); text-align: left; }
+  .landing-choice:hover { background: var(--row-active); border-color: var(--accent); }
+  .landing-choice:disabled { opacity: 0.6; cursor: default; }
+  .landing-choice svg { flex: 0 0 auto; }
+  .landing-choice .lc-text { display: flex; flex-direction: column; gap: 2px; }
+  .landing-choice .lc-text small { font-weight: normal; font-size: 11px; color: var(--muted); }
+
+  /* Leave request */
+  .leave-screen { display: none; max-width: 900px; margin: 0 auto; }
+  .back-link { background: none; border: none; color: var(--accent); font-size: 12px; font-weight: bold; cursor: pointer; font-family: Arial, sans-serif; padding: 0; margin-bottom: 14px; display: inline-flex; align-items: center; gap: 5px; }
+  .back-link:hover { text-decoration: underline; }
+  .lv-total-row { display: flex; align-items: center; justify-content: space-between; margin: 4px 0 18px; padding: 10px 14px; background: var(--surface); border-radius: 8px; font-size: 13px; font-weight: bold; color: var(--text); }
+  .lv-reason { background: var(--input-bg); border: 1.5px solid var(--border2); border-radius: 8px; padding: 10px 12px; font-size: 14px; color: var(--text); width: 100%; font-family: Arial, sans-serif; resize: vertical; min-height: 64px; }
+  .lv-reason:focus { outline: none; border-color: var(--accent); background: var(--input-focus-bg); }
+  .lr-list { display: flex; flex-direction: column; gap: 10px; }
+  .lr-item { border: 1px solid var(--border2); border-radius: 10px; padding: 12px 14px; }
+  .lr-item-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+  .lr-type { font-size: 13px; font-weight: bold; color: var(--text); }
+  .lr-badge { font-size: 11px; font-weight: bold; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+  .lr-badge.pending { background: #fff8e0; color: #8a6000; }
+  .lr-badge.approved { background: #eaf7ee; color: #1a6a30; }
+  .lr-badge.denied { background: #fff0f0; color: #c0392b; }
+  .lr-badge.returned { background: #e8f0fe; color: #1a3a6b; }
+  .lr-detail { font-size: 12px; color: var(--muted2); line-height: 1.5; }
+  .lr-note { font-size: 12px; color: var(--text); margin-top: 4px; font-style: italic; }
+  html[data-theme="dark"] .lr-badge.pending { background: #3a2f10; color: #e0c060; }
+  html[data-theme="dark"] .lr-badge.approved { background: #15301f; color: #4ade80; }
+  html[data-theme="dark"] .lr-badge.denied { background: #3a1818; color: #f08080; }
+  html[data-theme="dark"] .lr-badge.returned { background: #1e2640; color: #8aafd4; }
+
   /* Timesheet */
   .timesheet-screen { display: none; max-width: 900px; margin: 0 auto; }
   .ts-card { background: var(--card); border-radius: 14px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 12px var(--shadow2); }
@@ -248,6 +284,10 @@
 <body>
 
 <div class="top-controls">
+  <button class="logout-btn" id="switch-menu-btn" onclick="showLandingScreen()" title="Back to Timesheet / Leave menu" style="display:none;">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="flex:0 0 auto;"><rect x="2" y="3" width="12" height="2" fill="currentColor"/><rect x="2" y="7" width="12" height="2" fill="currentColor"/><rect x="2" y="11" width="12" height="2" fill="currentColor"/></svg>
+    Switch
+  </button>
   <button class="logout-btn" id="logout-btn" onclick="logout()" title="Log out and return to the name / last 4 screen">
     <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="flex:0 0 auto;"><path d="M6 2H3v12h3M10 11l3-3-3-3M13 8H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
     Logout
@@ -320,6 +360,24 @@
       <div class="recall-error" id="recall-error"></div>
     </div>
 
+  </div>
+</div>
+
+<!-- Landing chooser: shown right after identity is confirmed -->
+<div class="landing-screen" id="landing-screen">
+  <div class="landing-card">
+    <p class="landing-title">Welcome, <span id="landing-name"></span></p>
+    <p class="landing-sub">What would you like to do?</p>
+    <div class="landing-choices">
+      <button class="landing-choice" id="landing-timesheet-btn" onclick="openTimesheet()">
+        <svg width="22" height="22" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 5.5h6M5 8h6M5 10.5h3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        <span class="lc-text">Timesheet<small>Enter hours and submit your monthly timesheet</small></span>
+      </button>
+      <button class="landing-choice" id="landing-leave-btn" onclick="openLeaveScreen()">
+        <svg width="22" height="22" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 1.5v3M11 1.5v3M2 6.5h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <span class="lc-text">Request Leave<small>Submit a leave request for approval</small></span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -500,6 +558,98 @@
   </div>
 </div>
 
+<!-- Leave Request Screen -->
+<div class="leave-screen" id="leave-screen">
+  <div class="ts-card">
+    <button class="back-link" onclick="showLandingScreen()">&larr; Back to menu</button>
+    <div class="ts-header">
+      <h1>Y-TRAK — Request Leave</h1>
+      <p>Yalobusha County Sheriff's Department</p>
+    </div>
+    <div class="submit-status" id="lv-submit-status"></div>
+    <div class="val-banner" id="lv-val-banner"></div>
+
+    <div class="fields-grid" style="margin-bottom:16px;">
+      <div class="field" id="lv-field-type">
+        <label>Leave Type <span style="color:#e53e3e">*</span></label>
+        <select id="lv-type">
+          <option value="" disabled selected>Select leave type</option>
+        </select>
+        <span class="field-error">Required</span>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table style="min-width:0;">
+        <thead>
+          <tr>
+            <th style="width:160px;">Date</th>
+            <th style="width:110px;">Hours</th>
+            <th style="width:80px;border:none;background:transparent;"></th>
+          </tr>
+        </thead>
+        <tbody id="lv-body"></tbody>
+      </table>
+    </div>
+    <button class="add-line-btn" onclick="addLeaveLine()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Add Line
+    </button>
+    <div class="lv-total-row">
+      <span>Total hours requested</span>
+      <span id="lv-total">0.00</span>
+    </div>
+
+    <div class="field" style="margin-bottom:20px;">
+      <label>Reason (optional)</label>
+      <textarea class="lv-reason" id="lv-reason" placeholder="Brief reason for this leave request"></textarea>
+    </div>
+
+    <div class="sig-block">
+      <span class="sig-block-label">Employee Signature (optional)</span>
+      <div class="sig-toggle">
+        <button class="active" onclick="setLeaveSigMode('draw')">Sign manually</button>
+        <button onclick="setLeaveSigMode('upload')">Insert image</button>
+      </div>
+      <div id="lv-sig-draw-wrap">
+        <div class="sig-canvas-outer" id="leave-canvas-outer">
+          <canvas id="leave-canvas"></canvas>
+          <span class="sig-hint" id="leave-hint">Sign here with your finger or mouse</span>
+        </div>
+        <div style="border-bottom:1.5px solid #555;margin:4px 0;"></div>
+        <div class="sig-draw-actions">
+          <button class="sig-btn clear-btn" onclick="clearLeaveDraw()">Clear</button>
+          <button class="sig-btn save" onclick="saveLeaveDraw()">Save</button>
+        </div>
+        <span class="sig-saved" id="leave-sig-saved">&#10003; Signature saved</span>
+      </div>
+      <div class="sig-upload-wrap" id="lv-sig-upload-wrap">
+        <div class="sig-upload-box">
+          <input type="file" accept="image/*" id="leave-file" onchange="handleLeaveUpload(event)">
+          <img id="leave-upload-img" src="">
+          <span class="sig-upload-placeholder" id="leave-upload-ph">Tap to choose an image</span>
+        </div>
+        <div style="border-bottom:1.5px solid #555;margin:4px 0;"></div>
+        <span class="sig-upload-clear" id="leave-upload-clr" onclick="clearLeaveUpload()">Remove image</span>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <button class="action-btn primary" id="lv-submit-btn" onclick="submitLeaveRequest()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        Submit leave request
+      </button>
+    </div>
+  </div>
+
+  <div class="ts-card">
+    <div class="ts-header" style="margin-bottom:12px;">
+      <h1 style="font-size:15px;">My Leave Requests</h1>
+    </div>
+    <div id="lr-list" class="lr-list"><p class="lr-detail">Loading…</p></div>
+  </div>
+</div>
+
 <script>
 const sb = supabase.createClient(
   'https://kwgfonwgeoievgxwvxlg.supabase.co',
@@ -513,6 +663,9 @@ let isDraft = false;   // true when the loaded row is a saved (unsubmitted) draf
 let viewOnly = false;  // true when an already-approved timesheet is loaded (read-only)
 let approverName = '';  // name of the approving official on a loaded approved timesheet
 let prevMonth = '', prevYear = '';   // remembered top Month/Year, for the change-confirm
+let currentName = '', currentSsn = '';  // identified employee, set once at login, used by both Timesheet and Leave
+let leaveSigData = null;
+let leaveTypesList = [];
 
 /* ── Year dropdown: current year + next two, rebuilt from today's date so it
       rolls forward automatically each January with no code change ── */
@@ -669,11 +822,30 @@ function denyIdentity() {
   f.value = ''; try { f.focus(); } catch(e) {}
 }
 
-/* Step 2 — identity confirmed; load any existing timesheet (matched by last 4) and open the sheet. */
+/* Step 2 — identity confirmed; land on the Timesheet / Request Leave chooser. */
 async function proceedWithIdentity(name, ssn) {
   document.getElementById('verify-overlay').classList.remove('open');
-  const btn = document.getElementById('id-btn');
-  btn.disabled = true; btn.textContent = 'Opening…';
+  currentName = name;
+  currentSsn = ssn;
+  showLandingScreen();
+}
+
+/* ── Screen switching ── */
+function showLandingScreen() {
+  document.getElementById('id-screen').style.display = 'none';
+  document.getElementById('timesheet-screen').style.display = 'none';
+  document.getElementById('leave-screen').style.display = 'none';
+  document.getElementById('landing-screen').style.display = 'flex';
+  document.getElementById('landing-name').textContent = currentName;
+  document.getElementById('logout-btn').style.display = 'inline-flex';
+  document.getElementById('switch-menu-btn').style.display = 'none';
+}
+
+/* "Timesheet" chosen from the landing screen — look up any existing draft/returned/submitted sheet. */
+async function openTimesheet() {
+  const name = currentName, ssn = currentSsn;
+  const btn = document.getElementById('landing-timesheet-btn');
+  btn.disabled = true;
   // A saved draft takes priority — one draft per employee, so resume it if present.
   const { data: drafts } = await sb.from('timesheets').select('*').eq('ssn_last4', ssn).eq('status', 'draft').limit(1);
   let returned = null, submitted = null;
@@ -685,7 +857,7 @@ async function proceedWithIdentity(name, ssn) {
       submitted = sub;
     }
   }
-  btn.disabled = false; btn.textContent = 'Continue';
+  btn.disabled = false;
   showTimesheetScreen();
   document.getElementById('f-name').value = name;
   document.getElementById('f-ssn').value  = ssn;
@@ -718,6 +890,14 @@ async function proceedWithIdentity(name, ssn) {
     setTimeout(() => { notice.style.display = 'none'; }, 4000);
     buildGrid();
   }
+}
+
+/* "Request Leave" chosen from the landing screen */
+async function openLeaveScreen() {
+  showLeaveScreen();
+  if (leaveTypesList.length === 0) await loadLeaveTypesOptions();
+  resetLeaveForm();
+  loadMyLeaveRequests();
 }
 
 /* ── Recall timesheet (self-contained) ── */
@@ -758,16 +938,32 @@ async function recallTimesheet() {
 
 function showTimesheetScreen() {
   document.getElementById('id-screen').style.display = 'none';
+  document.getElementById('landing-screen').style.display = 'none';
+  document.getElementById('leave-screen').style.display = 'none';
   document.getElementById('timesheet-screen').style.display = 'block';
   document.getElementById('logout-btn').style.display = 'inline-flex';
+  document.getElementById('switch-menu-btn').style.display = 'inline-flex';
+}
+
+function showLeaveScreen() {
+  document.getElementById('id-screen').style.display = 'none';
+  document.getElementById('landing-screen').style.display = 'none';
+  document.getElementById('timesheet-screen').style.display = 'none';
+  document.getElementById('leave-screen').style.display = 'block';
+  document.getElementById('logout-btn').style.display = 'inline-flex';
+  document.getElementById('switch-menu-btn').style.display = 'inline-flex';
 }
 
 /* Log out of the timesheet: return to the name / last-4 (identity) screen and reset state. */
 function logout() {
   existingSheetId = null; isDraft = false; viewOnly = false; approverName = ''; sigData = null;
+  currentName = ''; currentSsn = ''; leaveSigData = null;
   document.getElementById('timesheet-screen').style.display = 'none';
+  document.getElementById('landing-screen').style.display = 'none';
+  document.getElementById('leave-screen').style.display = 'none';
   document.getElementById('id-screen').style.display = 'flex';
   document.getElementById('logout-btn').style.display = 'none';
+  document.getElementById('switch-menu-btn').style.display = 'none';
   // Clear the identity fields and any open recall box for the next person.
   ['id-ssn','recall-ssn','recall-year'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   ['recall-month'].forEach(id => { const el = document.getElementById(id); if (el) el.selectedIndex = 0; });
@@ -1293,6 +1489,163 @@ async function submitTimesheet() {
     btn.innerHTML='<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8l4 4 8-8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Submit timesheet';
   }
 }
+
+/* ══════════════════ Leave Request ══════════════════ */
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function loadLeaveTypesOptions() {
+  const sel = document.getElementById('lv-type');
+  try {
+    const { data, error } = await sb.from('settings').select('leave_types').eq('id', 'global').single();
+    if (error) throw error;
+    leaveTypesList = Array.isArray(data.leave_types) ? data.leave_types : [];
+  } catch (e) { leaveTypesList = []; }
+  sel.innerHTML = '<option value="" disabled selected>Select leave type</option>'
+    + leaveTypesList.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+}
+
+function addLeaveLine(dateVal, hoursVal) {
+  const tbody = document.getElementById('lv-body');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="date" class="ci lv-date" value="${dateVal||''}"></td>
+    <td><input type="number" class="ci lv-hours" step="0.25" min="0" max="24" placeholder="0.00" value="${hoursVal||''}"></td>
+    <td class="row-actions" style="text-align:right;"><button class="row-remove" onclick="removeLeaveLine(this)">Remove</button></td>`;
+  tbody.appendChild(tr);
+  tr.querySelector('.lv-hours').addEventListener('input', recalcLeaveTotal);
+  recalcLeaveTotal();
+  return tr;
+}
+function removeLeaveLine(btn) {
+  const tbody = document.getElementById('lv-body');
+  if (tbody.rows.length <= 1) { btn.closest('tr').querySelectorAll('input').forEach(i => i.value = ''); }
+  else { btn.closest('tr').remove(); }
+  recalcLeaveTotal();
+}
+function recalcLeaveTotal() {
+  let tot = 0;
+  document.querySelectorAll('#lv-body .lv-hours').forEach(inp => { tot += parseFloat(inp.value) || 0; });
+  document.getElementById('lv-total').textContent = tot.toFixed(2);
+}
+
+function resetLeaveForm() {
+  document.getElementById('lv-type').selectedIndex = 0;
+  document.getElementById('lv-reason').value = '';
+  document.getElementById('lv-body').innerHTML = '';
+  addLeaveLine();
+  document.getElementById('lv-val-banner').style.display = 'none';
+  document.getElementById('lv-submit-status').style.display = 'none';
+  clearLeaveDraw(); clearLeaveUpload(); leaveSigData = null;
+  setLeaveSigMode('draw');
+}
+
+function showLeaveStatus(ok, msg) {
+  const el = document.getElementById('lv-submit-status');
+  el.style.cssText = 'display:block;padding:10px 14px;border-radius:10px;font-size:13px;margin-bottom:12px;line-height:1.6;'
+    + (ok ? 'background:#eaf7ee;border:1.5px solid #a0d8b0;color:#1a6a30;' : 'background:#fff0f0;border:1.5px solid #f0b0b0;color:#c0392b;');
+  el.textContent = msg;
+}
+
+async function submitLeaveRequest() {
+  if (await checkMaintenance()) return;
+  const banner = document.getElementById('lv-val-banner');
+  const type = document.getElementById('lv-type').value;
+  const typeFld = document.getElementById('lv-field-type');
+  typeFld.classList.toggle('field-invalid', !type);
+  if (!type) { banner.textContent = 'Please select a leave type.'; banner.style.display = 'block'; return; }
+  const lines = [];
+  let hasInvalidLine = false;
+  document.querySelectorAll('#lv-body tr').forEach(tr => {
+    const date = tr.querySelector('.lv-date').value;
+    const hours = parseFloat(tr.querySelector('.lv-hours').value);
+    if (date && hours > 0) lines.push({ date, hours });
+    else if (date || (tr.querySelector('.lv-hours').value || '').trim() !== '') hasInvalidLine = true;
+  });
+  if (hasInvalidLine) { banner.textContent = 'Each line needs both a date and hours greater than 0 (or remove the line).'; banner.style.display = 'block'; return; }
+  if (lines.length === 0) { banner.textContent = 'Please add at least one date and hours before submitting.'; banner.style.display = 'block'; return; }
+  banner.style.display = 'none';
+  const total = lines.reduce((s, l) => s + l.hours, 0);
+  const payload = {
+    name: currentName, ssn: currentSsn, leaveType: type, lines,
+    totalHours: total.toFixed(2),
+    reason: document.getElementById('lv-reason').value.trim(),
+    empSrc: leaveSigData || ''
+  };
+  const btn = document.getElementById('lv-submit-btn');
+  const original = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = 'Submitting&hellip;';
+  document.getElementById('lv-submit-status').style.display = 'none';
+  try {
+    const res = await fetch('/.netlify/functions/submit-leave-request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const json = await res.json();
+    if (json.success) {
+      showLeaveStatus(true, '✓ Leave request submitted. Your supervisor will review it shortly.');
+      resetLeaveForm();
+      loadMyLeaveRequests();
+    } else { throw new Error(json.error || 'Unknown error'); }
+  } catch (err) {
+    showLeaveStatus(false, '✗ Submission failed: ' + err.message);
+  }
+  btn.disabled = false; btn.innerHTML = original;
+}
+
+function fmtLeaveDates(lines) {
+  if (!Array.isArray(lines) || lines.length === 0) return '';
+  const fmt = iso => { const p = String(iso).split('-'); return p.length === 3 ? `${p[1]}/${p[2]}/${p[0].slice(2)}` : iso; };
+  if (lines.length <= 3) return lines.map(l => `${fmt(l.date)} (${parseFloat(l.hours).toFixed(2)}h)`).join(', ');
+  return `${fmt(lines[0].date)} – ${fmt(lines[lines.length-1].date)} (${lines.length} days)`;
+}
+
+async function loadMyLeaveRequests() {
+  const el = document.getElementById('lr-list');
+  try {
+    const { data, error } = await sb.from('leave_requests').select('*').eq('ssn_last4', currentSsn).order('submitted_at', { ascending: false }).limit(20);
+    if (error) throw error;
+    if (!data || data.length === 0) { el.innerHTML = '<p class="lr-detail">No leave requests yet.</p>'; return; }
+    el.innerHTML = data.map(r => {
+      const status = (r.status || 'pending').toLowerCase();
+      const label = status.charAt(0).toUpperCase() + status.slice(1);
+      let note = '';
+      if (status === 'denied' && r.decision_note) note = `<div class="lr-note">Reason: ${esc(r.decision_note)}</div>`;
+      else if (status === 'returned' && r.decision_note) note = `<div class="lr-note">Note: ${esc(r.decision_note)}</div>`;
+      return `<div class="lr-item">
+        <div class="lr-item-top"><span class="lr-type">${esc(r.leave_type)}</span><span class="lr-badge ${status}">${esc(label)}</span></div>
+        <div class="lr-detail">${esc(fmtLeaveDates(r.lines))} &nbsp;&middot;&nbsp; ${esc(String(r.total_hours))} total hours</div>
+        ${note}
+      </div>`;
+    }).join('');
+  } catch (err) {
+    el.innerHTML = '<p class="lr-detail">Could not load your leave requests.</p>';
+  }
+}
+
+/* ── Leave signature pad (mirrors the timesheet's, with its own canvas/state) ── */
+function setLeaveSigMode(mode) {
+  document.querySelectorAll('#leave-screen .sig-toggle button').forEach((b,i) => b.classList.toggle('active',(i===0&&mode==='draw')||(i===1&&mode==='upload')));
+  document.getElementById('lv-sig-draw-wrap').style.display   = mode==='draw'   ? 'block' : 'none';
+  document.getElementById('lv-sig-upload-wrap').style.display = mode==='upload' ? 'flex'  : 'none';
+  document.getElementById('lv-sig-upload-wrap').style.flexDirection = 'column';
+  leaveSigData = null;
+  if (mode==='draw') clearLeaveDraw(); else clearLeaveUpload();
+}
+function setupLeavePad() {
+  const canvas=document.getElementById('leave-canvas'), outer=document.getElementById('leave-canvas-outer'), hint=document.getElementById('leave-hint');
+  function resize(){const dpr=window.devicePixelRatio||1,w=outer.clientWidth||300;canvas.width=w*dpr;canvas.height=80*dpr;canvas.style.width=w+'px';canvas.style.height='80px';const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);ctx.strokeStyle='#111';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';}
+  resize(); window.addEventListener('resize',resize);
+  let drawing=false;
+  function getPos(e){const rect=canvas.getBoundingClientRect();const src=e.touches?e.touches[0]:e;return{x:src.clientX-rect.left,y:src.clientY-rect.top};}
+  function start(e){e.preventDefault();drawing=true;hint.style.display='none';const ctx=canvas.getContext('2d');const p=getPos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);}
+  function move(e){if(!drawing)return;e.preventDefault();const ctx=canvas.getContext('2d');const p=getPos(e);ctx.lineTo(p.x,p.y);ctx.stroke();ctx.beginPath();ctx.moveTo(p.x,p.y);}
+  function end(){drawing=false;}
+  canvas.addEventListener('mousedown',start);canvas.addEventListener('mousemove',move);canvas.addEventListener('mouseup',end);canvas.addEventListener('mouseleave',end);
+  canvas.addEventListener('touchstart',start,{passive:false});canvas.addEventListener('touchmove',move,{passive:false});canvas.addEventListener('touchend',end);
+}
+function saveLeaveDraw(){leaveSigData=document.getElementById('leave-canvas').toDataURL('image/png');document.getElementById('leave-sig-saved').style.display='block';}
+function clearLeaveDraw(){const canvas=document.getElementById('leave-canvas'),dpr=window.devicePixelRatio||1;canvas.getContext('2d').clearRect(0,0,canvas.width/dpr,canvas.height/dpr);leaveSigData=null;document.getElementById('leave-hint').style.display='flex';document.getElementById('leave-sig-saved').style.display='none';}
+function handleLeaveUpload(e){const f=e.target.files[0];if(!f)return;const reader=new FileReader();reader.onload=ev=>{leaveSigData=ev.target.result;const img=document.getElementById('leave-upload-img');img.src=leaveSigData;img.style.display='block';document.getElementById('leave-upload-ph').style.display='none';document.getElementById('leave-upload-clr').style.display='block';};reader.readAsDataURL(f);}
+function clearLeaveUpload(){leaveSigData=null;const img=document.getElementById('leave-upload-img');img.src='';img.style.display='none';document.getElementById('leave-upload-ph').style.display='block';document.getElementById('leave-upload-clr').style.display='none';const f=document.getElementById('leave-file');if(f)f.value='';}
+setupLeavePad();
+document.getElementById('lv-sig-upload-wrap').style.display='none';
 
 /* ── PDF ── */
 /* Fit a signature image inside a box WITHOUT distorting it (preserves aspect ratio). */
